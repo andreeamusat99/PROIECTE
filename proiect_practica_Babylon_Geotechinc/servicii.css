@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,500;1,400&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+.services-section-page{
+    background: url(images/poza.png) no-repeat left;
+    background-size: 45%;
+    background-color: #f6f6f6;
+    overflow: hidden;
+    padding: 100px 0;
+}
+
+.inner-container-services-page{
+    width: 85%;
+    float: right;
+    background-image: url(images/about-bk.png);
+    padding: 150px;
+    border: 0.5px solid silver;
+}
+
+.inner-container-services-page h1{
+    margin-bottom: 30px;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+.text{
+    font-size: 13px;
+    color: #545454;
+    line-height: 30px;
+    text-align: justify;
+    margin-bottom: 40px;
+}

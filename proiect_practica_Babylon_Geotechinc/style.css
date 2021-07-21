@@ -1,0 +1,449 @@
+*{
+    box-sizing: border-box;
+    margin:0;
+    padding:0;
+
+    
+}
+
+.container{
+
+    position: relative;
+    width: 100%;
+	height: 100vh;
+	background-image: linear-gradient(rgba(0,0,0,0.8),rgba(0,0,0,0.6)),url(images/drilling.jpg);
+    background-size: cover;
+	background-position: center;
+}
+.navbar{
+ 
+    position: fixed;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: auto;
+    background: rgba(0, 0, 0, 0.603);
+
+}
+.logo img{
+    width: 50%;
+    cursor:pointer;
+    margin: 5px 15px;
+}
+nav ul li{
+    list-style: none;
+    display: inline-block;
+    margin: 15px ;
+
+}
+nav ul li a{
+    text-decoration: none;
+    color: #ff904f ;
+    font-size: 14px;
+    padding: 5px 2px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: bold;
+}
+nav ul li a i{
+    margin-right: 10px;
+}
+button{
+    margin-right: 20px;
+    padding: 9px 15px;
+    background: #ff904f;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.5s ease 0s;
+    border: none;
+
+}
+button:hover{
+    background-color: #234355;
+}
+.icon-bar{
+    background: darkorange;
+}
+/*
+.search{
+    width: 250px;
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    box-sizing: border-box;
+    border: 1px solid #4e3829;
+    border-radius:20px;
+
+}
+.search img{
+    height:16px;
+    margin-right: 10px;
+    cursor: pointer;
+    opacity: 0.5;
+}
+.search input{
+    width: 100%;
+    outline: none;
+    border: 0;
+    color: #999;
+    background: transparent;
+    font-size: 14px ;
+
+}
+*/
+hr{
+    width: 9800px;
+    height: 1px;
+    background:#b3e1f1;
+    margin: 15px 10px;
+    border: none;
+    opacity: 0.1;
+    
+
+}
+.container .main h1{
+    font-family: 'Montserrat', sans-serif;
+    font-size: 70px;
+    color: #fff;
+    letter-spacing: 2px;
+    margin-left: 5%;
+    margin-top: 20%;
+    padding: 30px 0px;
+}
+.container .main p{
+    font-family: 'Montserrat', sans-serif;
+    color: #eec5ad ;
+    margin-left: 5%;
+    margin-top: 1%;
+    font-size:20px;
+    line-height: 20px;
+    font-weight: bold;
+    letter-spacing: 0.10px;
+
+}
+body{
+    background-color: rgb(231, 231, 231);
+}
+
+
+/*despre noi */
+.container-about {
+    height: 75vh;
+    background:rgb(235, 159, 115);
+}
+.about-h2{
+    float: right;
+    padding-right: 270px;
+    font-size: 30px;
+    border-bottom: 8px solid rgb(13, 13, 39);
+    padding: 10px 30px;
+    margin-top: 50px;
+    margin-right: 50px;
+    
+}
+
+.box-about{ 
+  display: flex;
+  align-items:center;
+  margin-left: 15px;
+  padding: 20px;
+  
+}
+
+
+.box-about img{
+    border-radius: 75px 275px 55px 25px;
+    margin-top: 80px;
+    padding: 0 30px; 
+    width: 575px;
+    height: 375px; 
+}
+
+.container-about p{
+    margin-top: 100px;
+    float: right;
+    font-family: 'Montserrat', sans-serif;
+    color: rgb(46, 43, 43);
+    font-size:20px;
+    line-height: 20px;
+    font-weight: bold;
+    letter-spacing: 0.10px;
+   padding-left: 30px;
+   
+}
+
+
+/* misiune */
+.container-mission {
+    height: 75vh;
+    background:rgb(13, 13, 39);
+}
+.mission-h2{
+    float: left;
+    color: #fff;
+    font-size: 30px;
+    border-bottom: 8px solid #ff904f;
+    padding: 0px 0px;
+    margin-top: 50px;
+    margin-left: 50px;   
+}
+.box-mission{ 
+  display: flex;
+  align-items:center;
+  margin-left: 15px;
+  padding: 20px;
+}
+.box-mission img{
+    border-radius: 275px 75px 25px 55px;
+    margin-top: 80px;
+    padding: 0 30px; 
+    width: 575px;
+    height: 375px; 
+}
+.container-mission p{
+    margin-top: 130px;
+    float: left;
+    font-family: 'Montserrat', sans-serif;
+    color: rgb(184, 175, 175);
+    font-size:20px;
+    line-height: 20px;
+    font-weight: bold;
+    letter-spacing: 0.10px;
+    padding: 0px ;  
+}
+    
+
+
+
+/* servicii
+.wrapper{
+    width: 85%;
+    margin: 11%; 
+    
+}
+.wrapper h4{ 
+    font-size: 23px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgb(14, 11, 11);
+
+}
+
+
+.services{
+    
+    position: relative;
+    width: 30%;
+    height: 320px;
+    background: #fafafa;
+    box-sizing: border-box;
+    padding: 0 15px;
+    transition: .5s;
+    overflow: hidden;
+    float: left;
+    margin: 10px;
+    text-align: center;
+    border-radius: 1.8%;
+  
+}
+
+.services p{
+    font-family: 'Montserrat', sans-serif;
+    color: rgb(19, 16, 16);
+    font-size: 16px;
+}
+.services h3{
+    font-size: 23px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgb(14, 11, 11);
+}
+.social{
+width: 60px;
+   height: 60px;
+   margin: 2% auto;
+}
+.social i{
+    text-align: center;
+    align-items: center;
+    font-size: 70px;
+    padding: 20px;
+    color:#ff904f;
+    margin-top: 20%;
+    background: #2d5e60;
+    background-size: cover;
+    border-radius: 50%;
+}
+.services span{
+    position: absolute;
+    top: 0;
+    left: -110%;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    transition: .6s;
+    transform:skewX(10deg);
+}
+.services:hover span{
+    left: 110%;
+
+}
+   */
+
+
+
+
+/* form contact */
+.contact{
+    position: relative;
+    min-height: 100vh;
+    padding: 50px 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background: url(images/fundal-contact.jpg);
+    background-size: cover;
+}
+.contact .content{
+    max-width: 800px;
+    text-align: center;
+}
+.contact .content h2{
+    font-size: 36px;
+    font-weight: 500;
+    color: #fff;
+}
+.contact .content p{
+   
+    font-weight: 300;
+    color: #fff;
+}
+.container-form{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+}
+.container-form .contact-info{
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+}
+.container-form .contact-info .box{
+    position: relative;
+    padding: 20px 0;
+    display: flex;
+   
+}
+.container-form .contact-info .box .icon {
+    min-width: 60px;
+    height: 60px;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    font-size: 22px;
+}
+
+.container-form .contact-info .box .text{
+   display: flex;
+   margin-left: 15px;
+   font-size: 16px;
+   color: #fff;
+   flex-direction: column;
+   font-weight: 300;
+}
+.container-form .contact-info .box .text h3{
+    font-weight: 700;
+    color: #00bcd4;
+}
+.contact-form{
+    width: 40%;
+    padding: 10%;
+    background: #fff;
+}
+.contact-form h2{
+font-size: 30px;
+color: #333;
+font-weight: 500;
+
+}
+.contact-form .inputBox {
+    position: relative;
+    width: 100%;
+    margin-top: 10px;
+}
+.contact-form .inputBox input,
+.contact-form .inputBox textarea {
+    width: 100%;
+    padding: 5px 0;
+    font-size: 16px;
+    margin: 10px 0;
+    border: none;
+    border-bottom: 2px solid #333;
+    outline: none;
+    resize: none;
+
+}
+.contact-form .inputBox span {
+    position: absolute;
+    left: 0;
+    padding: 5px 0;
+    font-size: 16px;
+    margin: 10px 0;
+    pointer-events: none;
+    transition: 0.5s;
+    color: #666;
+}
+.contact-form .inputBox input:focus ~ span,
+.contact-form .inputBox input:valid ~ span,
+.contact-form .inputBox textarea:focus ~ span,
+.contact-form .inputBox textarea:valid ~ span  {
+    color: #ff904f;
+    font-size: 12px;
+    transform: translateY(-20px);
+}
+.contact-form .inputBox input[type="submit"] {
+    width: 100px;
+    background: rgb(13, 13, 39) ;
+    color: #fff;
+    border:none;
+    cursor: pointer;
+    padding: 10px;
+    font-size: 18px;
+    border-radius: 5%;
+}
+@media (max-width: 991px) {
+    .contact-form {
+        padding: 50px;
+    }
+    .container-form {
+        flex-direction: column;
+    }
+    .contact-form .contact-info {
+        margin-bottom:  40px;
+    }
+    .container-form .contact-info,
+    .contact-form {
+        width: 100%;
+    }
+}
+/*
+footer{
+    height: 25vh ;
+    background: #030c11;
+    color:#b0cace;
+
+
+}
+footer .contact-footer {
+    justify-content: center;
+    padding-right: 0px;
+    margin-right: 1px;
+    border-right: 1px solid #fff;
+}
+*/
