@@ -1,0 +1,102 @@
+<div class="card card-body">
+  <h2><i class="bi bi-egg"></i> Dogs</h2>
+  <hr>
+  <!--  Afisare cu divuri-->
+  <!--  <div *ngFor="let dog of doggies">-->
+  <!--    Name: {{dog.name}}; Age: {{dog.age}}; Race: {{dog.race}}-->
+  <!--  </div>-->
+
+  <!--  <ol>-->
+  <!--&lt;!&ndash; Aici voi folosi componenta&ndash;&gt;-->
+  <!--    <app-dog-list-element *ngFor="let dog of doggies" [dog]="dog"></app-dog-list-element>-->
+  <!--  </ol>-->
+
+  <ngb-alert *ngIf="doggies.length<5" [dismissible]="true">
+    <strong>Warning!</strong> Who let the dogs out?!
+  </ngb-alert>
+  <table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+      <th>Name</th>
+      <th>Age</th>
+      <th>Race</th>
+      <th>Operations</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let dog of doggies; let i=index">
+      <td>{{dog.name}}</td>
+      <td>{{dog.age}}</td>
+      <td>{{dog.race}}</td>
+      <td>
+        <div *ngIf="!editModeOn" class="btn-group">
+          <button (click)="enterEditMode(dog)" class="btn btn-outline-primary mr-1"><i class="bi bi-pen-fill"></i></button>
+          <button (click)="openDeleteModal(deleteModal,i)" class="btn btn-outline-danger"><i
+            class="bi bi-trash-fill"></i></button>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <div class="row">
+    <div class="col-sm-2">
+      <button *ngIf="!editModeOn" [disabled]="currentDog.name.length===0 || currentDog.race.length===0 || currentDog.age<0"
+              (click)="onAddDogClick()"
+              class="btn btn-success"><i class="bi bi-plus-square-fill"></i> Dog
+      </button>
+      <button *ngIf="editModeOn" [disabled]="currentDog.name.length===0 || currentDog.race.length===0 || currentDog.age<0"
+              (click)="leaveEditMode()"
+              class="btn btn-primary"><i class="bi bi-check-lg"></i> Save
+      </button>
+    </div>
+    <div class="col-sm-4">
+      <input [(ngModel)]="currentDog.name" name="dogName" class="form-control" placeholder="Name..."/>
+    </div>
+    <div class="col-sm-2">
+      <input min="0" max="3" [(ngModel)]="currentDog.age" name="dogAge" type="number" class="form-control"
+             placeholder="Age..."/>
+    </div>
+    <div class="col-sm-4">
+      <input [(ngModel)]="currentDog.race" name="dogRace" class="form-control" placeholder="Race..."/>
+    </div>
+  </div>
+  <br>
+  <div>
+    <button (click)="open(content)" class="btn btn-primary">Woof!</button>
+  </div>
+</div>
+
+
+<ng-template #content let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Who let the dogs out?!</h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    Woof woof woof!
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-dark" (click)="modal.close('Save click')">Save</button>
+  </div>
+</ng-template>
+
+<ng-template #deleteModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Delete Confirmation</h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    Please confirm deletion of this dog: <br>
+    <app-dog-list-element [dog]="dogToDelete"></app-dog-list-element>
+    <img width="100" src="assets/images/dogbasket.png">
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss('Save click')">Cancel</button>
+    <button type="button" class="btn btn-outline-danger" (click)="modal.close('Save click')">Confirm</button>
+  </div>
+</ng-template>
+
