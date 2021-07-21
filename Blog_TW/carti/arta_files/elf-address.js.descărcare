@@ -1,0 +1,288 @@
+/**
+ * Address handling in ELF context
+ * Provides some data and handle events.
+ */
+var ElfAddress = {
+	// References for jQuery objects
+	dataCtnr: null,
+	contactDataForm: null,
+	billingAddressForm: null,
+	continueCheckoutButton: null,
+
+	// backend data
+	preferredShipToAddressURN: null,
+	currentDomainDisplayName: null,
+	updateShippingPromise: null,
+	selectAddressPromise: null,
+	ajaxCalculateBasketUrl: null,
+	ajaxGetShipToAddressUrl: null,
+	useSameAddresses: null,
+};
+
+/* initalize events and functions */
+ElfAddress.init = function () {
+	ElfAddress.initData();
+	ElfAddress.initObjectReferences();
+	ElfAddress.onEditAddress();
+	ElfAddress.onSaveAddress();
+	ElfAddress.onChangeShippingAddress();
+	ElfAddress.onChangeInvoiceAddress();
+};
+
+/**
+ * On address creation or modification
+ * Used for My Account & Checkout
+ */
+ElfAddress.onEditAddress = function () {
+	$(document).on('click', 'form[name="EditAddressForm"] button[name="save"]', function (e) {
+		var $this = $(this);
+		var form = $this.closest('form');
+		var url = form.attr('action');
+		var method = form.attr('method');
+		var target = $this.data('target');
+
+		$.ajax({
+			type: method,
+			url: url,
+			data: form.serialize(),
+			beforeSend: function (xhr) {
+				var validator = form.data('bootstrapValidator');
+				validator.validate();
+
+				if (!validator.isValid()) {
+					xhr.abort;
+					return false;
+				} else {
+					form.addClass('opacity');
+				}
+			},
+			success: function (data) {
+
+				// handle modal response
+				if($(data).filter("div.modal-dialog").length){
+					Validation.unbind(form);
+					$this.closest("div.modal-dialog").replaceWith(data);
+					Validation.bind($('form[name="EditAddressForm"]'));
+					return;
+				}
+
+				// only checkout: replace page content
+				if(target){
+					Validation.unbind($('#address-page-form'));
+					$(target).replaceWith($(data).find(target));
+					Validation.bind($('#address-page-form'));
+					Checkout.initStoreSelection(); //display store selection alerts etc.
+					$('.modal').modal('hide');
+				}
+			},
+			error: function (data) {
+				// TODO: Error handling
+			},
+			complete: function () {
+				form.removeClass('opacity');
+			},
+		});
+	});
+};
+
+/* initialize data field */
+ElfAddress.initData = function () {
+	ElfAddress.dataCtnr = $('#js-checkout-address-data-ctnr');
+	ElfAddress.useSameAddresses = ElfAddress.dataCtnr.attr('useSameAddresses');
+	ElfAddress.preferredShipToAddressURN = ElfAddress.dataCtnr.attr('preferredShipToAddressURN');
+	ElfAddress.currentDomainDisplayName = ElfAddress.dataCtnr.attr('currentDomainDisplayName');
+	ElfAddress.ajaxCalculateBasketUrl = ElfAddress.dataCtnr.attr('ajaxCalculateBasketUrl');
+};
+
+/* initialize jquery object references */
+ElfAddress.initObjectReferences = function () {
+	ElfAddress.contactDataForm = $('#contact-data');
+	ElfAddress.billingAddressForm = $('#billing-address');
+	ElfAddress.continueCheckoutButton = $('#continue-checkout');
+};
+
+ElfAddress.onSaveAddress = function () {
+	$(this)
+		.find('button[name ="save"]')
+		.click(function () {
+			//ToDo: Trigger ElfAddress.ajaxUpdateShipping when this is the selected shipping address
+		});
+};
+
+ElfAddress.onChangeShippingAddress = function () {
+	$(document).on('change', 'input[name="ShippingAddressID"]', function () {
+		var $this = $(this);
+
+		ElfAddress.ajaxUpdateShipping(
+			$('input[name="ShippingAddressOption"]:checked').val(),
+			$this.val(),
+			$this,
+			false
+		);
+	});
+};
+
+
+ElfAddress.onChangeInvoiceAddress = function () {
+	$(document).on('change', 'input[name="InvoiceAddressID"]', function () {
+		// console.log('onChangeInvoiceAddress');
+		var $this = $(this);
+		ElfAddress.selectAddress($this);
+		$.get($this.data('action'), function (data) {
+			// a response with a link with the id="redirect" signals that this href should be loaded
+			if ($(data).filter('a#redirect').length == 1) {
+				location = $(data).filter('a#redirect').attr('href');
+				return false;
+			}
+			var $content = $(data).find("div[name='invoice']");
+			// else add the response to the closes address wrapper
+			$($this.closest('.address-wrapper')).html($content);
+		});
+		$('#address-container').removeClass('opacity');
+		ElfAddress.billingAddressForm.removeClass('opaque');
+	});
+};
+
+/* Ajax call to update shipping */
+ElfAddress.ajaxUpdateShipping = function (shippingAddressOption, shipToAddressID, spinnerTarget, resolveAddressFlag) {
+
+	if (!shippingAddressOption) {
+		shippingAddressOption = $('input[name="ShippingAddressOption"]:checked').val();
+	}
+
+	var postData = {
+		ShippingAddressOption: shippingAddressOption,
+		ShipToAddressID: shipToAddressID,
+		FormInput: '0',
+		ResolveAddressFlag: resolveAddressFlag,
+	};
+
+	// add shipping address form input to post data
+	$('form[id=address-page-form]').serializeArray().reduce(function(obj, item) {
+		if((item.name).substr(0, 9) == "shipping_") {
+			console.log(item.name);
+			postData[item.name] = item.value;
+			postData['FormInput'] = '1';
+		}
+	}, {});
+
+	$.ajax({
+		type: 'POST',
+		url: ElfAddress.ajaxCalculateBasketUrl,
+		data: postData,
+		dataType: 'json',
+		async: true,
+		beforeSend: function(){
+			RetailShop.showSpinner(spinnerTarget);
+		},
+		success: function (data) {
+			//get new values from json
+			Checkout.insertCalculationResult(data, shippingAddressOption);
+		},
+		complete: function(){
+			RetailShop.hideSpinner(spinnerTarget);
+		}
+
+	});
+
+	return Promise.resolve('done');
+};
+
+/*
+ * overwrite 'Save' behavior for Pickup Contact edit page
+ * See: PickupContact.isml
+ */
+ElfAddress.onSavePickupContact = function (ajaxUrl) {
+	// unbind existing click events
+	$("button[name='save']").unbind('click');
+
+	$("button[name='save']").click(function (event) {
+		// console.log('onSavePickupContact');
+
+		event.preventDefault();
+		$("button[name='save']").unbind('click'); // unbind all other existing events
+
+		var postData = {
+			PickupContact_FirstName: $('#PickupContact_FirstName').val(),
+			PickupContact_LastName: $('#PickupContact_LastName').val(),
+			PickupContact_Phone: $('#PickupContact_Phone').val(),
+		};
+
+		$("button[name='save']").unbind('click');
+		var form = $(this).closest('form');
+		//$('#contact-data-div').removeClass('opacity');
+		ElfAddress.billingAddressForm.removeClass('opacity');
+		$('#continue-checkout').removeClass('opacity');
+		$.ajax({
+			type: 'POST',
+			url: ajaxUrl,
+			data: postData,
+			dataType: 'html',
+			success: function (html) {
+				Validation.unbind(form);
+				$('#contact-data').html(html);
+				Validation.bind(form);
+			},
+		});
+		// hide modal layer
+		$('.modal').modal('hide');
+	});
+};
+
+/**
+ * checkout address page for registered users use selected address
+ */
+ElfAddress.selectAddress = function ($this) {
+	var params = $this
+		.closest('form')
+		.serializeArray()
+		.filter(function (formField) {
+			if (
+				formField.name === 'ShippingAddressID' ||
+				formField.name === 'StoreAddressID' ||
+				formField.name === 'InvoiceAddressID' ||
+				formField.name === 'SynchronizerToken' ||
+				formField.name === 'PickupContact_LastName' ||
+				formField.name === 'PickupContact_FirstName' ||
+				formField.name === 'PickupContact_Phone'
+			) {
+				return true;
+			}
+		});
+
+	// "PSJELEF-998 Bug (Closing the selected address)": use page reload until ajax version is completely implemented
+	// location = $this.closest('.address-wrapper').data('action') + '?' + $.param(params);
+
+	var form = $(this).closest('form');
+
+	// use ajax call instead of reload of page
+	$.ajax({
+		type: 'post',
+		url: $this.closest('.address-wrapper').data('action'),
+		data: params,
+		async: false,
+		success: function (data) {
+			Validation.unbind(form);
+
+			if ($this.parents('.shipping-address').length == 1) {
+				$('.shipping-address').html($(data).find('.shipping-address').html());
+			} else if ($this.parents('.checkout-billing-address').length == 1) {
+				$('.checkout-billing-address').html($(data).find('.checkout-billing-address').html());
+			} else if ($this.parents('.checkout-storeaddress-alt').length == 1) {
+				$('.checkout-storeaddress-alt').html($(data).find('.checkout-storeaddress-alt').html());
+			}
+
+			// show pickup point infos if radio selected
+			if ($('#shipping-method-pickup').is(':checked')) {
+				$('.checkout-storeaddress-alt').show();
+			}
+
+			Validation.bind(form);
+		},
+	});
+	return (ElfAddress.selectAddressPromise = Promise.resolve('success'));
+};
+/* Initialize ElfAddress */
+$(document).ready(function () {
+	ElfAddress.init();
+});

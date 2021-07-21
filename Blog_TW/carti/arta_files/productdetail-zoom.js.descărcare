@@ -1,0 +1,166 @@
+// productdetail-zoom.js is used to zoom product images in the detail page
+// initialize the global zoom
+var Zoom = {};
+
+/*
+ * Registering all the methods on initialization.
+ */
+Zoom.init = function() {
+    Zoom.initMultiZoom();
+}
+
+Zoom.initMultiZoom = function() {
+
+    if($('.product-detail-img').length) {
+        // only if product detail image is shown
+
+        var multizoomOptions = {// multi-zoom: options same as for previous Featured Image Zoomer's addimagezoom unless noted as '- new'
+            speed: 0, // duration of fade in for new zoomable images (in milliseconds, optional) - new
+            imagevertcenter: true, // zoomable image centers vertically in its container (optional) - new
+            magvertcenter: false, // magnified area centers vertically in relation to the zoomable image (optional) - new
+            zoomrange: [2],
+            magnifiersize: [maxZoomPreviewWidth(), maxZoomPreviewHeight()],
+            magnifierpos: 'center',
+            cursorshadecolor: '#fff',           
+            cursorshade: false
+        };
+
+        function maxZoomPreviewWidth() {
+
+            var currentWindowWidth = $(window).width()
+
+            // reduce width if there are carousel navigation controls
+            if (currentWindowWidth > 1200) {
+                return 500;
+                
+            } else if (currentWindowWidth > 992) {
+                return 451;
+                
+            } else if (currentWindowWidth < 992) {
+                return 345;
+            }
+        }
+
+        function maxZoomPreviewHeight() {
+
+            // retun height of product image
+            if($('.product-detail-img').outerHeight() != 1){
+                return $('.product-detail-img').outerHeight();
+            }
+
+            var currentWindowWidth = $(window).width()
+
+            if (currentWindowWidth > 1200) {
+                return 667;  
+
+            } else if (currentWindowWidth > 992) {
+                return 601;
+                
+            } else if (currentWindowWidth < 992) {
+                return 460;
+            }
+        }
+
+        function removeMultizoomOverlays() {
+            $('.featuredimagezoomerhidden').remove();
+            $('.magnifyarea').remove();
+            $('.zoomtracker').remove();
+            $('.zoomstatus').remove();
+            $('.cursorshade').remove();
+        }
+
+        function repositionMultizoom() {
+
+            removeMultizoomOverlays();
+
+            addMultizoom();
+
+            var magnifierObj = $('.magnifyarea');
+
+            magnifierObj.height(maxZoomPreviewHeight());
+            magnifierObj.width(maxZoomPreviewWidth());
+
+        }
+
+        function addMultizoom() {
+
+            // lift carousel navigation controls up, so they remain clickable eventhough the multizoom comes into play 
+            $('.carousel-control').css('z-index','1');
+
+            // assign unique id to each image
+            $('img','#prodimgcarousel').each(function(index) {
+                $(this).attr('id', 'slide-image-'+index);
+            });
+
+            // get id of active product image
+            var id = 'slide-image-0';
+            $('div','#prodimgcarousel').each(function(index) {
+                if ($(this).hasClass('active')){
+                    id = $('img',$(this)).attr('id');
+                }
+            });
+
+            // initialize zoom image
+            var dataLarge = $("#"+id).attr('data-large');
+            if (typeof dataLarge !== 'undefined') {
+                // only if the attribute exists, it does not exist in case the "image not available" is shown
+                if (dataLarge) {
+                    multizoomOptions.largeimage = dataLarge;
+                } else {
+                    delete multizoomOptions.largeimage;
+                }
+    
+                // append multizoom to slide
+                multizoomOptions.selector = "#"+id;
+                $("#"+id).addimagezoom(multizoomOptions);
+            }
+
+        }
+
+        // set the loading spinner
+        featuredimagezoomer.loadinggif = RetailShop.URLs.webRootPath + '/img/icons/ajax-loader.gif';
+
+        // enable multizoom
+        addMultizoom();
+
+        // event before carousel sliding 
+        $('#prodimgcarousel').on('slide.bs.carousel', function (event) {
+            removeMultizoomOverlays()
+        });
+
+        // event after having slid the carousel
+        $('#prodimgcarousel').on('slid.bs.carousel', function (event) {
+            
+            var id = $('img', event.relatedTarget).attr('id');
+            // extract the trailing number from e.g. "slide-image-2" by splitting and returning the 3rd token.
+            var count = id.split('-')[2];
+            
+            //$("#"+id).addmultizoom(multizoomOptions);
+            // update zoom preview size
+            multizoomOptions.magnifiersize = [maxZoomPreviewWidth(), maxZoomPreviewWidth()];
+            
+            var dataLarge = $('img', event.relatedTarget).attr('data-large');
+            if (dataLarge) {
+                multizoomOptions.largeimage = dataLarge;
+            } else {
+                delete multizoomOptions.largeimage;
+            }
+            $("#"+id).addimagezoom(multizoomOptions);
+
+            // update thumbnails active status
+            $('[data-target="#prodimgcarousel"]').removeClass('active');
+            $('[data-target="#prodimgcarousel"][data-slide-to="'+count+'"]').addClass('active');
+        });
+
+        // event to adjust size of magnifier-area on window resize
+        $(window).on('resize', function() {
+            repositionMultizoom();
+        });
+    }
+}
+
+$(document).ready(function(){
+    setTimeout(function (){
+        Zoom.init();
+    }, 1000);
+});

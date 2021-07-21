@@ -1,0 +1,736 @@
+/**
+ * Store Finder
+ * handles map & selection drop down initialization
+ *
+ */
+
+StoreFinder = (function () {
+	var map = null;
+	var cartId = null;
+	var mapContainer = null;
+	var storeTypes = null;
+	var bounds = null;
+	var markers = [];
+	var selectStoreAction = null;
+
+	// localized texts
+	var selectStoreText = null;
+	var selectStoreNotEligibleText = null;
+	var selectStoreNotEligibleInfo = null;
+	var openingHoursText = null;
+
+	//Initialization will be called as a callback of Google Maps API in Map.isml
+	function init() {
+		initData();
+		initMap();
+		onFilterSelection();
+		onCollapseMap();
+		onDialogChange();
+		onDialogShown();
+		onDialogHidden();
+		onStoreListCreated();
+	}
+
+	function initData() {
+		checkoutDataCtnr = $('#js-checkout-address-data-ctnr');
+		storeFinderDataCtnr = $('#js-store-finder-data-ctnr');
+		cartId = checkoutDataCtnr.attr('cartId');
+		selectStoreText = storeFinderDataCtnr.attr('select-store-text');
+		selectStoreNotEligibleText = storeFinderDataCtnr.attr('select-store-not-eligible-text');
+		selectStoreNotEligibleInfo = storeFinderDataCtnr.attr('select-store-not-eligible-info');
+		selectStoreAction = storeFinderDataCtnr.attr('select-store-action');
+		openingHoursText = storeFinderDataCtnr.attr('opening-hours-text');
+		mapContainer = $('#map');
+	}
+
+	function initMap() {
+		if (mapContainer.length) {
+			// The location of point zero (default location)
+			var romania = { lat: 46.057996, lng: 25.094211 };
+			// The map, centered at point zero (default location)
+			map = new google.maps.Map(document.getElementById('map'), {
+				zoom: 7,
+				center: romania,
+				mapTypeControl: false,
+				zoomControl: true,
+				zoomControlOptions: {
+					position: google.maps.ControlPosition.RIGHT_BOTTOM,
+				},
+				scaleControl: false,
+				streetViewControl: false,
+				fullscreenControl: false,
+			});
+
+			// Set up dropdowns
+			initSelectors(mapContainer);
+
+			// Set up listeners
+			onMapLoaded();
+		}
+	}
+
+	/**
+	 * set map filter controls for store types
+	 */
+	function renderFilterControls(storesArray) {
+		var filterNavigation = $('.filter-navigation');
+		if (filterNavigation.length) {
+			storeTypes = getStoreTypes(storesArray);
+			filterNavigation.html('');
+			if (storeTypes) {
+				$.each(storeTypes, function (i, type) {
+					filterNavigation.append(createFilterCheckbox(type, true));
+				});
+			}
+		}
+	}
+
+	/**
+	 * returns a checkbox element
+	 */
+	function createFilterCheckbox(name, checked) {
+		return $('<div />', { class: 'checkbox' }).append(
+			$('<label />')
+				.append($('<input />', { type: 'checkbox', name: 'StoreTypeFilter', value: name, checked: checked }))
+				.append($('<span />').text(name))
+		);
+	}
+
+	/**
+	 * initialize country and city drop downs
+	 */
+	function initSelectors() {
+		// set up listener for city selector
+		$('select.js-cities').change(function () {
+			synchronizeSelectors('select.js-cities', this.value);
+			initSectorSelector(this.value);
+		});
+		// set up listener for sector selector
+		$('select.js-sectors').change(function () {
+			synchronizeSelectors('select.js-sectors', this.value);
+
+			if (!this.value) {
+				$('#no-selection-overlay').fadeIn();
+				return;
+			}
+
+			var selectedStores = getStoresBySector(this.value);
+			renderFilterControls(selectedStores);
+			createStoreList(selectedStores);
+			setMarkers(selectedStores);
+			$('#no-selection-overlay').fadeOut();
+		});
+
+		initCitySelector();
+	}
+
+	function onMapLoaded() {
+		google.maps.event.addListenerOnce(map, 'idle', function () {
+			var selectedStore = findSelectedStore();
+
+			// Preselect selected store in overlay list
+			if ($('.stores-info-container').length && selectedStore) {
+				var selectedStoreEntry = $('div.store-entry-name:contains(' + selectedStore.name + ')').parent();
+				selectedStoreEntry.click();
+
+				// scroll to store entry within store list
+				var storeList = selectedStoreEntry.parent();
+				if (storeList.length) {
+					storeList.animate({
+						scrollTop: selectedStoreEntry.offset().top - storeList.offset().top + storeList.scrollTop(),
+					});
+				}
+			}
+		});
+	}
+
+	/**
+	 * Click on map marker
+	 */
+	function onMarkerSelection(marker) {
+		// open store entry within list store finder page (no drop down)
+		$('#store-finder')
+			.find('.store-list .store-entry')
+			.each(function () {
+				if ($(this).find('.store-entry-name').text() === marker.title) {
+					scrollToStore($(this).attr('pos'));
+					// enlarge list element
+					$(this).find('.store-entry-button i.material-icons').trigger('click');
+				}
+			});
+	}
+
+	/**
+	 * Listener for filter selection
+	 */
+	function onFilterSelection() {
+		$(document).on('change', 'input:checkbox[name="StoreTypeFilter"]', function () {
+			if ($(this).is(':checked')) {
+				showMarkers($(this).val());
+			} else {
+				hideMarkers($(this).val());
+			}
+			// recreate store list
+			var selectedStores = getStoresBySector($('.js-sectors.selectpicker').val());
+			if (selectedStores.length) {
+				createStoreList(selectedStores);
+			}
+		});
+	}
+
+	/**
+	 * Toggle collaps of map in mobile view
+	 */
+	function onCollapseMap() {
+		$(document).on('click', 'button.map-toggle', function (e) {
+			$(this)
+				.children()
+				.each(function () {
+					$(this).toggle();
+				});
+			$(document).find('#map').toggleClass('collapsed');
+
+			var storeList = $('.store-list');
+			var map = $('#map');
+
+			if (map.hasClass('collapsed')) {
+				// map height will be 120px after animation
+				storeList.height($('#StoreFinderDialog').outerHeight() - (map[0].getBoundingClientRect().top + 60));
+			} else {
+				// map height will be 300px after animation
+				storeList.height($('#StoreFinderDialog').outerHeight() - (map[0].getBoundingClientRect().top + 300));
+			}
+		});
+	}
+
+	/**
+	 * Show all available stores for the city of the selected store
+	 */
+	function onDialogChange() {
+		$(document).on('click', 'a.js-dialog-change', function (e) {
+			var currentStoreId = $('input[name=StoreFinder_Store]').val();
+			var currentCity = getCity(currentStoreId);
+			var currentSector = getSector(currentStoreId);
+
+			// reset city to the selected store
+			citySelect = $('select.js-cities');
+			if (currentCity !== citySelect.val()) {
+				citySelect.val(currentCity);
+				citySelect.trigger('change');
+				citySelect.selectpicker('refresh');
+			}
+
+			// reset sector to the selected store
+			var sectorSelect = $('select.js-sectors');
+			if (currentSector !== sectorSelect.val()) {
+				sectorSelect.val(currentSector);
+				sectorSelect.trigger('change');
+				sectorSelect.selectpicker('refresh');
+			}
+
+			if (sectorSelect.val() === '') {
+				$('#no-selection-overlay').fadeIn();
+				return;
+			}
+
+			//show all stores for the current sector
+			var selectedStores = getStoresBySector(sectorSelect.val());
+			renderFilterControls(selectedStores)
+			createStoreList(selectedStores)
+			setMarkers(selectedStores);
+		});
+	}
+
+	/**
+	 * On Storefinder dialog shown
+	 */
+	function onDialogShown() {
+		$('#StoreFinderDialog').on('shown.bs.modal', function () {
+			// Manually reload Google Map upon opening of the store finder modal
+			map.setZoom(map.getZoom());
+
+			// Set body to position:fixed to prevent scrolling
+            if($(this).hasClass('in')) {
+				// remember page scroll position
+				window.body_scroll_pos = $(window).scrollTop();
+                $('body').addClass('fixed-mobile');
+            }
+		});
+	}
+
+	/**
+	 * On Storefinder dialog hidden
+	 */
+	function onDialogHidden() {
+		$('#StoreFinderDialog').on('hidden.bs.modal', function () {
+			$('body').removeClass('fixed-mobile');
+			$(window).scrollTop(window.body_scroll_pos);
+		});
+	}
+
+	/**
+	 * If there is a single entry in the store list, toggle it.
+	 */
+	function onStoreListCreated() {
+		$(document).on('storeListCreated', function () {
+			var $entries = $('.store-list div.store-entry');
+			if($entries && $entries.length == 1){
+				$entries.find('.store-entry-button i.material-icons').trigger('click');
+			}
+		});
+	}
+
+	/**
+	 * Keep selector pairs on page & in popup in sync
+	 */
+	function synchronizeSelectors(selector, value) {
+		$(selector).each(function (index) {
+			$(this).val(value); // setting the value will not trigger a 'change' event, hence no map action
+			$(this).selectpicker('refresh');
+		});
+	}
+
+	/**
+	 * Function to hide markers by store type
+	 */
+	function hideMarkers(category) {
+		var length = markers.length;
+		for (i = 0; i < length; i++) {
+			marker = markers[i];
+			if (marker.getVisible() && marker.category == category) {
+				marker.setVisible(false);
+			}
+		}
+	}
+
+	/**
+	 * Function to show markers by store type
+	 */
+	function showMarkers(category) {
+		var length = markers.length;
+		for (i = 0; i < length; i++) {
+			marker = markers[i];
+			if (!marker.getVisible() && marker.category == category) {
+				marker.setVisible(true);
+			}
+		}
+	}
+
+	/**
+	 * remove markers from map and flush markers list
+	 */
+	function removeMarkers() {
+		var length = markers.length;
+		for (i = 0; i < length; i++) {
+			markers[i].setMap(null);
+		}
+		markers.length = 0;
+	}
+
+	/**
+	 * Adds markers to the map based on a selected region/sector
+	 **/
+	function setMarkers(selectedStores) {
+		// Create empty bounds object.
+		bounds = new google.maps.LatLngBounds();
+
+		removeMarkers();
+
+		// Loop through the stores, set the markers and their listener.
+		var length = selectedStores.length;
+		for (var i = 0; i < length; i++) {
+			var store = selectedStores[i];
+
+			// Marker sizes are expressed as a Size of X,Y where the origin of the icon
+			// (0,0) is located in the top left of the icon.
+
+			// Origins, anchor positions and coordinates of the marker increase in the X
+			// direction to the right and in the Y direction down.
+
+			var icon = {
+				url: store.link_image_url,
+				// This standard marker is 47 pixels wide by 56 pixels high.
+				size: new google.maps.Size(47, 56),
+				// The origin for this icon is (0, 0).
+				origin: new google.maps.Point(0, 0),
+				// The anchor for this icon is the base of the marker at (0, 56).
+				anchor: new google.maps.Point(23.5, 56),
+			};
+
+			var marker = new google.maps.Marker({
+				position: { lat: store.lat, lng: store.lng },
+				map: map,
+				icon: icon,
+				title: store.name,
+				id: store.id,
+				country: store.country,
+				city: store.city,
+				sector: store.sector,
+				category: store.type,
+			});
+
+			// listener for marker clicks
+			marker.addListener('click', function (e) {
+				onMarkerSelection(this);
+			});
+
+			// store the marker position into the bounds
+			bounds.extend(marker.position);
+
+			// store the marker into global array.
+			markers.push(marker);
+
+			// apply filters: hide markers where the store type is disabled
+			var filterNavigation = $('.filter-navigation');
+			if (storeTypes && filterNavigation.length) {
+				$.each(storeTypes, function (i, type) {
+					if (!filterNavigation.find('input[value="' + type + '"]').is(':checked')) {
+						marker.setVisible(false);
+					}
+				});
+			}
+		}
+		// adjust map position and zoom
+		map.fitBounds(bounds);
+
+		// When the map is hidden, fitBounds() does not work properly because it relies on the dimension of the map container
+		// This results in the map to zoom out too far. Work around: zoom back into zoom level 11 if zoom is too small
+		// See: https://stackoverflow.com/a/56457609/12435945
+		if (map.getZoom() < 11) {
+			map.setZoom(11);
+		}
+
+		// make sure zoom is not too high
+		if (map.getZoom() > 18) {
+			map.setZoom(18);
+		}
+	}
+
+	/**
+	 * Handle change of city selection dropdown on storefinder page
+	 * Create and prepare store list
+	 */
+	function createStoreList(selectedStores) {
+		// remove previous list
+		$('.store-list-container .store-list').html('');
+
+		// find filtered (hidden) store types
+		var hiddenTypes = [];
+
+		$.each(storeTypes, function (i, type) {
+			if (
+				!$('.filter-navigation')
+					.find('input[value="' + type + '"]')
+					.is(':checked')
+			) {
+				hiddenTypes.push(type);
+			}
+		});
+
+		$.each(selectedStores, function (idx, store) {
+			// skip filtered filtered entries
+			if ($.inArray(store.type, hiddenTypes) !== -1) {
+				return;
+			}
+
+			// Create the store entry element containing store info
+			var storeEntry = $('<div>')
+				.addClass('store-entry')
+				.attr('pos', idx + 1)
+				.appendTo($('.store-list-container .store-list'));
+			var storeEntryButton = $('<div>').addClass('store-entry-button').appendTo(storeEntry);
+			$('<div>').addClass('store-entry-name').appendTo(storeEntry).html(store.name);
+			$('<div class="store-address">' + store.address + '</div>').appendTo(storeEntry);
+			$('<i>').addClass('material-icons').html('keyboard_arrow_right').appendTo(storeEntryButton);
+			storeEntry.on('click', function (e) {
+				if ($(this).find('.store-entry-button i.material-icons').text() === 'keyboard_arrow_right') {
+					$(this).closest('.store-list').find('.store-entry-desc').slideUp('fast');
+					$(this).closest('.store-list').find('.store-entry').removeClass('selected');
+					$(this)
+						.closest('.store-list')
+						.find('.store-entry-button i.material-icons')
+						.text('keyboard_arrow_right');
+					$(this).find('.store-entry-button i.material-icons').text('keyboard_arrow_down');
+					$(this).closest('.store-entry').addClass('selected').find('.store-entry-desc').slideDown('fast');
+
+					scrollToStore($(this).closest('.store-entry').attr('pos'));
+					centerMapOnMarker(store);
+				} else {
+					$(this).find('.store-entry-button i.material-icons').text('keyboard_arrow_right');
+					$(this).closest('.store-entry').removeClass('selected').find('.store-entry-desc').slideUp('fast');
+
+					map.fitBounds(bounds);
+				}
+			});
+
+			// determine if store is eligible
+			var eligibility = 'eligible';
+			var selectButtonAttr = '';
+			var selectButtonText = selectStoreText;
+			if(store.eligible === 'false'){
+				eligibility = 'not-eligible';
+				selectButtonText = selectStoreNotEligibleText;
+				selectButtonAttr = 'disabled="disabled"';
+			}
+
+			$('<div>')
+				.addClass('store-entry-desc')
+				.addClass(eligibility)
+				.appendTo(storeEntry)
+				.html(
+					'<div class="hours-label">' +
+						openingHoursText +
+						'</div>' +
+						'<div class="store-openinghours">' +
+						store.openinghours +
+						'</div>' +
+						'<button class="js-store-select btn btn-primary btn-block"' +
+						selectButtonAttr +
+						'value="' +
+						store.id +
+						'" type="button" data-spinner-target="#address-container">' +
+						selectButtonText +
+						'</button>'  +
+						'<span class="not-eligible-info"><small><em>' + selectStoreNotEligibleInfo + '</em></small></span>'
+				);
+		});
+		$('.store-list-container .store-list').append('<br/><br/><br/>');
+		$(document).trigger('storeListCreated');
+	}
+
+	/**
+	 * zoom map on a specific store
+	 */
+	function centerMapOnMarker(store) {
+		if (store) {
+			map.setCenter(new google.maps.LatLng(store.lat, store.lng));
+			map.setZoom(18);
+		}
+	}
+
+	/**
+	 * fill city drowdown with data
+	 */
+	function initCitySelector() {
+		var $cityDropdown = $('select.js-cities');
+		if ($cityDropdown.length == 0) {
+			return;
+		}
+
+		// remove all options
+		$cityDropdown.empty();
+
+		// set new options
+		var selectedStore = findSelectedStore();
+		$cityDropdown.append($('<option data-hidden="true" hidden></option>'));
+		$.each(getCities(), function (i, city) {
+			if (selectedStore && city === selectedStore.city) {
+				$cityDropdown.append($('<option selected />').val(city).text(city));
+			} else {
+				$cityDropdown.append($('<option />').val(city).text(city));
+			}
+		});
+
+		// trigger 'change' event
+		$cityDropdown.trigger('change');
+		$cityDropdown.selectpicker('refresh');
+	}
+
+	/**
+	 * fill sector dropdown it with data
+	 */
+	function initSectorSelector(city) {
+		var $sectorDropdown = $('select.js-sectors');
+		var sectors = getSectorsByCity(city);
+
+		if ($sectorDropdown.length == 0) {
+			return;
+		}
+
+		if (!city || city === '') {
+			$sectorDropdown.prop('disabled', true);
+		} else {
+			$sectorDropdown.removeAttr('disabled');
+		}
+
+		// remove all options
+		$sectorDropdown.empty();
+
+		// set new options
+		var selectedStore = findSelectedStore();
+		$sectorDropdown.append($('<option data-hidden="true" hidden></option>'));
+		$.each(sectors, function (i, sector) {
+			if (selectedStore && sector === selectedStore.sector) {
+				$sectorDropdown.append($('<option selected />').val(sector).text(sector));
+			} else {
+				$sectorDropdown.append($('<option />').val(sector).text(sector));
+			}
+		});
+
+		// trigger 'change' event
+		$sectorDropdown.trigger('change');
+		$sectorDropdown.selectpicker('refresh');
+	}
+
+	/**
+	 * Return an array of all stores of a specific sector
+	 */
+	function getStoresBySector(sector) {
+		var selectedStores = (duplicateStores = []);
+		$.each(stores, function (idx, store) {
+			if (!duplicateStores[store.name] && store.sector === sector) {
+				duplicateStores[store.name] = true;
+				selectedStores.push(store);
+			}
+		});
+		return selectedStores.sort();
+	}
+
+	/**
+	 * Return an array of all cities
+	 */
+	function getCities() {
+		var cities = (duplicateCities = []);
+		$.each(stores, function (idx, store) {
+			if (!duplicateCities[store.city]) {
+				duplicateCities[store.city] = true;
+				cities.push(store.city);
+			}
+		});
+		return cities.sort();
+	}
+
+	/**
+	 * Return the city of a store
+	 */
+	function getCity(storeId) {
+		var length = stores.length;
+		for (var i = 0; i < length; i++) {
+			if (stores[i].id == storeId) {
+				return stores[i].city;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Return the city of a store
+	 */
+	function getSector(storeId) {
+		var length = stores.length;
+		for (var i = 0; i < length; i++) {
+			if (stores[i].id == storeId) {
+				return stores[i].sector;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Return an array of all sectors of a specific city
+	 */
+	function getSectorsByCity(city) {
+		var sectors = (duplicateSectors = []);
+		$.each(stores, function (i, store) {
+			if (!duplicateSectors[store.sector] && store.city === city) {
+				duplicateSectors[store.sector] = true;
+				sectors.push(store.sector);
+			}
+		});
+		return sectors.sort();
+	}
+
+	/**
+	 * Return an array of StoreTypes
+	 */
+	function getStoreTypes(storesArray) {
+		var types = (duplicateTypes = []);
+		$.each(storesArray, function (i, store) {
+			if (!duplicateTypes[store.type]) {
+				duplicateTypes[store.type] = true;
+				types.push(store.type);
+			}
+		});
+		return types;
+	}
+
+	/**
+	 * Return the store object that is considered selected
+	 */
+	function findSelectedStore() {
+		// Priority 1: return store that is currently set via input field
+		var $storeInput = $('input[name=StoreFinder_Store]');
+		if ($storeInput.length && $storeInput.val().length) {
+			var length = stores.length;
+			for (var i = 0; i < length; i++) {
+				if (stores[i].id == $storeInput.val()) {
+					return stores[i];
+				}
+			}
+		}
+
+		// Priority 2: return store of the previous selection of this cart session
+		var cartId = $('#js-checkout-address-data-ctnr').attr('cartId');
+		if (cartId && localStorage.getItem(cartId) != null) {
+			selectedStoreID = localStorage.getItem(cartId);
+			return getStoreById(selectedStoreID);
+		}
+
+		// Priority 3: if there was no selection previously, return store that has the 'selected' attribute from stores object
+		if (!cartId) {
+			var length = stores.length;
+			for (var i = 0; i < length; i++) {
+				if (stores[i].selected == 'selected') {
+					return stores[i];
+				}
+			}
+		}
+		return;
+	}
+
+	/**
+	 * Return the store object by id
+	 */
+	function getStoreById(id) {
+		var length = stores.length;
+		for (var i = 0; i < length; i++) {
+			if (stores[i].id == id) {
+				return stores[i];
+			}
+		}
+	}
+
+	/**
+	 * Scroll store list to store entry
+	 */
+	function scrollToStore(pos) {
+		var scrollHeight = (parseInt(pos) - 1) * $('.store-list-container .store-list .store-entry:nth-child('+(parseInt(pos-1))+')').outerHeight(true);
+		var divScrollHeight = $('.store-list-container .store-list')[0].scrollHeight;
+		if (scrollHeight > divScrollHeight) {
+			scrollHeight = divScrollHeight;
+		}
+		setTimeout(function () {
+			$('.store-list-container .store-list').animate({ scrollTop: scrollHeight });
+		}, 150);
+	}
+
+	function getSelectStoreAction() {
+		return selectStoreAction;
+	}
+
+	function getCartId() {
+		return cartId;
+	}
+
+	/**
+	 * Declare public access of StoreFinder
+	 */
+	return {
+		getCartId: getCartId,
+		getSelectStoreAction: getSelectStoreAction,
+		init: init,
+		getStoreById: getStoreById,
+		findSelectedStore: findSelectedStore,
+		centerMapOnMarker: centerMapOnMarker,
+	};
+})();

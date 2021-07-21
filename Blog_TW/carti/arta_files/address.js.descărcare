@@ -1,0 +1,189 @@
+// address functionality
+$(document).ready(function () {
+	onChangeAddressCountry();
+	onChangeAddressState();
+	onChangeBillingAddressType();
+});
+
+/**
+ * Modify the city input/select according to the change in state
+ */
+function onChangeAddressState() {
+	$(document).on('change', 'select[data-state-list]', function () {
+		var $this = $(this);
+		//get the relevant form values (country & state)
+		var stateProvinceCode = $this.val();
+		var countryCode = $this.closest('fieldset').find('[data-country-list]').val();
+		var $cityFormField = $this.closest('fieldset').find('[data-city-field]');
+		var cityFieldName = $cityFormField.find("[name$='_City']").attr('name');
+		var formName = cityFieldName.split('_')[0];
+		var form = $this.closest('form');
+		var validator = form.data('bootstrapValidator');
+		var url = $this.data('url');
+		var formValues = {
+			CountryCode: countryCode,
+			StateProvinceCode: stateProvinceCode,
+			CityFieldName: cityFieldName,
+			FormName: formName,
+		};
+
+		$.ajax({
+			type: 'post',
+			url: url,
+			data: formValues,
+			beforeSend: function () {
+				// immediately erase city value to prevent user from submitting invalid city-state combinations
+				// city can be an <input> (International) or <select> (RO, MD, ...)
+				var $cityInput = $cityFormField.find('input[name="' + cityFieldName + '"], select[name="' + cityFieldName + '"]');
+				$cityInput.val('');
+
+			},
+			success: function (data) {
+				validator.removeField($cityFormField.find('input, select'));
+				$cityFormField.fadeOut('100', function () {
+					$cityFormField.html($(data).filter('[data-city-field]').html());
+
+					// enable city input
+					var $cityInput = $cityFormField.find('input[name="' + cityFieldName + '"]');
+					if (stateProvinceCode) {
+						$cityInput.prop('disabled', false);
+					}
+
+					$cityFormField.fadeIn('100', function () {
+						validator.addField($cityFormField.find('input, select'));
+						$('[data-toggle="popover"]', $(parent)).popover({ trigger: 'hover' });
+					});
+				});
+			},
+		});
+		//only guest checkout or registered user without address
+		if (formName === 'shipping') {
+			var calcUrl = $this.data('calc');
+			var ajaxForm = $(form).serialize();
+			$.ajax({
+				type: 'post',
+				url: calcUrl,
+				async: false,
+				data: ajaxForm,
+				success: function (data) {
+					Checkout.insertCalculationResult(data, '1');
+				},
+			});
+		}
+	});
+}
+
+/**
+ * Request and display Address Form when changing Country
+ */
+function onChangeAddressCountry() {
+	$(document).on('change', 'select[data-country-list]', function () {
+		var $this = $(this);
+		//find parent element that holds the dynamic address form fields
+		var parent = $this.closest('[data-address-form]');
+
+		// remove city value, so form can not be submitted with invalid data before ajax call is executed
+		var $cityFormField = $this.closest('fieldset').find('[data-city-field]');
+		var cityFieldName = $cityFormField.find("[name$='_City']").attr('name');
+		var $cityInput = $(parent).find("[name='" + cityFieldName + "']");
+		var form = $this.closest('form');
+		var validator = form.data('bootstrapValidator');
+		$cityInput.val('');
+
+		//get relevant form values
+		var formValues = parent.find('input, select').serialize() + '&formType=' + $this.attr('name').split('_')[0];
+		//get url
+		var url = $this.data('url');
+		//get surrounding form for validation binding operations
+		var form = $this.closest('form');
+		$.ajax({
+			type: 'post',
+			url: url,
+			data: formValues,
+			async: false, // because of problems with Validator.unbind()/ bind()
+			success: function (data) {
+
+				$(parent).fadeOut('100', function () {
+
+					// unbind replaced form fields
+					$(parent).find('input:not(:hidden), select').each(function(i, obj) {
+						validator.removeField($(this));
+					});
+
+					$(parent).html($(data).filter('[data-address-form]').html());
+
+					// disable city input
+					$cityInput = $(parent).find("[name='" + cityFieldName + "']");
+					$cityInput.prop('disabled', true);
+
+					$(parent).fadeIn('100', function () {
+
+						// bind new form fields
+						$(parent).find('input:not(:hidden), select').each(function(i, obj) {
+							validator.addField($(this));
+
+						});
+
+						// hide name and phone inputs for business addresses again after switching the address form via country selection
+						$('#customersel-business').trigger('change');
+						$('[data-toggle="popover"]', $(parent)).popover({ trigger: 'hover' });
+					});
+				});
+			},
+		});
+	});
+}
+
+function onChangeBillingAddressType() {
+	$(document).on('click', '.billingAddressTypes #customersel-business', function (e) {
+		var $target = $(e.target);
+		var $billingAddressType = $('input[name="BillingAddressType"]');
+
+		//      toggle billing address type
+		$billingAddressType.val('business');
+
+		//      fill mandatory private fields with default shipping values
+		var privateFields = $target.closest('.sub-section').find('.private-information input');
+		var defaultShippingAddressFields = $target.closest('.modal-dialog').find('[name^="DefaultShippingAddress"]');
+
+		if (defaultShippingAddressFields.length > 0) {
+			['FirstName', 'LastName', 'Phone'].forEach(function (fieldName) {
+				var fieldSelector = "[name*='" + fieldName + "']";
+				var shippingAddressFieldVal = defaultShippingAddressFields.filter(fieldSelector).val();
+				privateFields.filter(fieldSelector).val(shippingAddressFieldVal);
+			});
+		}
+	});
+
+	$(document).on('click ', '.billingAddressTypes #customersel-private', function (e) {
+		var $target = $(e.target);
+		var $billingAddressType = $('input[name="BillingAddressType"]');
+
+		// toggle billing address type
+		$billingAddressType.val('private');
+	});
+
+	$(document).on('change', '#customersel-business', function () {
+		// hide errors related to addresses
+		$('.alert-danger.alert-addresses').slideUp();
+
+		// show company info
+		if ($(this).is(':checked')) {
+			$('.checkout-address-alt, .new-address-alt').find('.company-information').slideDown(); // show company fields
+			$('.checkout-address-alt, .new-address-alt').find('.private-information').slideUp(); // hide private fields
+			$(this.form).data('bootstrapValidator').disableSubmitButtons(false);
+		}
+	});
+	$(document).on('change', '#customersel-private', function () {
+		// show private info
+		if ($(this).is(':checked')) {
+			$('.checkout-address-alt, .new-address-alt').find('.company-information').slideUp(); // hide company fields
+			$('.checkout-address-alt, .new-address-alt').find('.private-information').slideDown(); // show private fields
+			$(this.form).data('bootstrapValidator').disableSubmitButtons(false);
+		}
+	});
+	if ($('#customersel-business').is(':checked')) {
+		$('.checkout-address-alt, .new-address-alt').find('.private-information').slideUp(); // initially hide private fields if company information is selected
+		$('.checkout-address-alt, .new-address-alt').find('.company-information').slideDown();
+	}
+}

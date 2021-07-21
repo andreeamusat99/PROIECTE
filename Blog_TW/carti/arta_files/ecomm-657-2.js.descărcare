@@ -1,0 +1,20 @@
+var isPDP = document.querySelector('.product-detail-page');
+var disclaimerHTML = '<div class="disclaimer-vin"><div class="alert alert-warning" style="color:#000000;background-color:transparent;"><i class="material-icons" style="color:#7ed321;position:absolute;margin-top:-3px;">info</i><ul class="list-unstyled"><li><span style="display:block;padding-left:35px;">Consumul de alcool este interzis persoanelor cu varsta sub 18 ani!</span></li></ul></div></div>';
+
+if(isPDP){
+	var vinBreadcrumbFound = findElementText("*[class*='breadcrumbs-list']", "Vin");
+	if(vinBreadcrumbFound){
+		var disclaimerSelector = document.querySelector('.list-group.service-list');
+		if(disclaimerSelector){
+			disclaimerSelector.insertAdjacentHTML('afterend', disclaimerHTML);
+		}
+	}
+}
+
+function findElementText(selector, text) {
+	var elements = $(selector).filter(function() {
+		return $(this).text() === text;
+	});
+
+	return elements.length > 0;
+}

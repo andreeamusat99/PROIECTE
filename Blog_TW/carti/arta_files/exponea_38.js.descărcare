@@ -1,0 +1,893 @@
+'use strict';
+
+if($("script[src*='exponea.js']").length == 0) {
+
+!function(i,t) {
+    function e(e){
+        return function(){
+            var n=arguments;if("initialize"==e&&n&&n[0].modify&&n[0].modify.overlay&&"loading"==t.readyState){var a="__inf__overlay__";
+            t.write('<div id="'+a+'" style="position:absolute;background:#fff;left:0;top:0;width:100%;height:100%;z-index:1000000"></div>'),
+            setTimeout(function(){
+                var e=t.getElementById(a);
+                e&&t.body.removeChild(e),i.exponea.__=!0
+            },n[0].modify.delay||500)}this._.push([e,arguments])
+        }
+    }
+    if (!i.infinario) {
+        var n, a, o = "initialize identify update track trackLink trackEnhancedEcommerce getHtml showHtml showBanner showForm ping getAbTest getRecommendation".split(" "), r = t.createElement("script"), d = "https:" === t.location.protocol ? "https:" : "http:";
+        for (i.infinario = {_: []}, a = 0; a < o.length; a++)n = o[a], i.infinario[n] = e(n);
+        r.type = "text/javascript", r.async = !0, r.src = d + "//api.infinario.com/js/infinario.min.js", r.setAttribute("crossorigin", "anonymous"), t.getElementsByTagName("head")[0].appendChild(r)
+    }
+}(window,document);
+
+
+$(() => {
+    infinario.elfAPI = "https://api.infinario.com";
+    infinario.channelISH = $('meta[name=channel-locale]').attr("value");
+    infinario.tokenELF = "";
+    if (infinario.channelISH)
+        infinario.settingsLocale = $('meta[name=channel-locale]').attr("value").split('_')[1].toLowerCase();
+    else
+        infinario.settingsLocale = $('html').attr('lang');
+    if (infinario.settingsLocale === "ro") {
+        if(window.location.hostname.startsWith("pre-live") || window.location.hostname.startsWith("pre-edit"))
+            infinario.tokenELF = "641f6c8c-57e4-11e6-bdb1-549f3510fedc";
+        else {
+            infinario.tokenELF = "5dddab7a-53ef-11e6-9a43-549f3510fedc";
+            infinario.safariWebsitePushID = "web.ro.elefant.www";
+        }
+    } else if (infinario.settingsLocale === "md" || infinario.settingsLocale === "ru") {
+        infinario.tokenELF = "abf62786-e7a3-11e6-9a4f-b083fedeed2e";
+        infinario.safariWebsitePushID = "web.md.elefant.www";
+    } else {
+        return;
+    }
+
+    infinario.initialize({
+        "push": {
+            "safari": {
+                "websitePushID": infinario.safariWebsitePushID
+            }
+        },
+        target: infinario.elfAPI,
+        token:  infinario.tokenELF,
+       'track': {'visits':true},
+    });
+
+    infinario.eventsISH = {
+            "productList":          ( ($('.product-search-result').length == 1) && !( ($('.selected-filter-group').not('.filterattribute-availableflag, .filterattribute-categoryuuidlevelmulti').length > 0) || ($('.selected-filter-group.filterattribute-availableflag span.ws-filter-value').length > 1) || ($('.product-search-result .selected-filter-group.filterattribute-categoryuuidlevelmulti span.ws-filter-value').length > 1) ) ) ? true : false,
+            "productListFilter":    ( ($('.product-search-result').length == 1) && ( ($('.selected-filter-group').not('.filterattribute-availableflag, .filterattribute-categoryuuidlevelmulti').length > 0) || ($('.selected-filter-group.filterattribute-availableflag span.ws-filter-value').length > 1) || ($('.product-search-result .selected-filter-group.filterattribute-categoryuuidlevelmulti span.ws-filter-value').length > 1) ) ) ? true : false,
+            "productView":          $('body.product-detail-page').length ? true : false,
+            "etaResult":            ($('#ArrivalTime').length == 1) ? true : false,
+            "cartView":             ($('.cart-page').length == 1 || $('.empty-cart').length == 1 /* && $('.empty-cart').length == 0*/) ? true : false,
+            "orderSubmit":          $('#form-submit-order').length ? true : false,
+            "purchase":             $('.purchase.product-list').attr('order-number') && !window.location.search.includes('RegistrationSuccessful') ? true : false,
+    };
+
+    infinario.selectorEventISH = {
+        userDetails: '.my-account-link.hidden-xs',
+        itemSearch:  'form.search.clearfix',
+        productCategory : '.elf-category-name',
+        productCategories: '.breadcrumbs-list-link',
+        productList: '.product-list > .product-list-item > .product-tile',
+        productListFilters:  '.selected-filter-group',
+        addToCart: '.add-to-cart-wrapper > .product-info > .dynamicproductdata > .product-form > .product-info-actions > .add-to-cart > button',
+        addToCartFromWishList: '.product-tile.wishlist > form > .add-to-cart > button',
+        removeFromCart: '.list-body.list-body-cart > .list-item-row > .btn-delete',
+        removeFromMiniCart: '.quick-cart-delete-link > .material-icons',
+        orderCompleted: '#form-payment',
+        productReview: '.add-to-cart-wrapper > .product-rating.clearfix',
+        deleteAccountForm: 'form[name="RequestDeleteDataForm"] input[type="submit"]'
+    }
+
+    infinario.identify(userDetailsRC(true));
+    infinario.update(userDetailsRC(false));
+    /*
+    $('form.form-horizontal').on('submit', function(e){
+        if(window.location.href.includes("ViewUserAccount-ShowRegister")) {
+            infinario.update(registration(userDetails(true)));
+        }
+    });*/
+    if (infinario.eventsISH.productView) {
+        /* The product detail tracking is fired automatically but the estimated delivery time is shown using a 
+            ajax request (ProductShipping.isml). Therefore we need to check for the ajax request: 
+            - success: event "productdetail.eta.shown" is fired at the document
+            - error: event "productdetail.eta.notshown" is fired at the document
+            If the ajax request takes too long (more than 2sec), we have to fire the tracking event as well.
+            We always fire the same event with the same method productViewed(). Within this method the delivery is set no matter 
+            if the value is set or not. If it was not set, it will be empty.
+        */
+        // set the timer
+        let timerETA;
+        clearTimeout(timerETA);
+        // track if 2sec have passed and the ajax call did not fire it already
+        timerETA = setTimeout(function (event) {
+            infinario.track('Product Viewed', productViewed());
+        }, 2000);
+        // eta ajax call succeeded: estimated delivery is shown, fired in ProductShipping.isml
+        $(document).on('productdetail.eta.shown', function(){
+            infinario.track('Product Viewed', productViewed());
+            // clear the eta timer because it should not be tracked twice after 2sec
+            clearTimeout(timerETA);
+        });
+        // eta ajax call error: estimated delivery is not shown, fired in ProductShipping.isml
+        $(document).on('productdetail.eta.notshown', function(){
+            infinario.track('Product Viewed', productViewed());
+
+            // clear the eta timer because it should not be tracked twice after 2sec
+            clearTimeout(timerETA);
+        });
+    }
+
+    productSearched();
+    productListViewed();
+    productListFiltered();
+    addToCart();
+    addToCartFromWishList();
+    removeFromCart();
+    cartViewed();
+    miniCartViewed();
+    orderSubmitted();
+    orderCompleted();
+    productPurchased();
+    productReview();
+    setConsentFromMyAccount();
+    setConsentFromCredentialForm();
+    updateCustomerAttributes();
+    deleteAccount();
+});
+
+function isNavigation() {
+    //avoid duplication during refresh, history back/forward, etc.
+    if(window.performance)
+        return performance.navigation.type == performance.navigation.TYPE_NAVIGATE;
+    else
+        return true; //cannot detect - fallback
+}
+
+function fixPriceValue (value) {
+    let price =  value.toString().replace(/.*?:/, "").replace(/lei|leu/i, "").trim().replace(".", "").replace(",", ".");
+    return price;
+}
+
+function isNumber(value) {
+    return !isNaN(value);
+}
+
+function dataMapper(data) {
+    let reformattedArray = data.map(obj =>{
+        let rObj = {};
+        rObj[obj.key] = obj.value;
+        return rObj;
+     });
+    return reformattedArray;
+}
+
+let userDetails = (flag) => {
+        let userBO = {};
+        let object = $(infinario.selectorEventISH.userDetails);
+        if (object.length !== 0) {
+            if(flag) {
+                userBO.registered = object[0].children[2].value;
+            } else {
+                userBO.user_id = object[0].children[1].value;
+                userBO.email = object[0].children[2].value;
+            }
+        } else {
+            userBO.cookie = document.cookie.replace(/.*?=/, '').replace(/;.*?$/, '').trim();
+        }
+        return userBO;
+};
+
+let userDetailsRC = (flag) => {
+    let userBO = {};
+
+    if(window.RESTConfiguration && window.RESTConfiguration.Login) {
+        if(flag) {
+            userBO.registered = window.RESTConfiguration.Login;
+        } else {
+            userBO.user_id = window.RESTConfiguration.CustomerNo;
+            userBO.email = window.RESTConfiguration.Login;
+            var language = window.navigator.userLanguage || window.navigator.language;
+            if(language){
+                userBO.browser_language = language.slice(0, 2);
+            }
+        }
+    } else {
+        userBO.cookie = document.cookie.replace(/.*?=/, '').replace(/;.*?$/, '').trim();
+    }
+
+    return userBO;
+};
+
+/*
+let registration = (userID) => {
+        let userBO = {};
+        userBO.registered = userID;
+        userBO["email"] = $('input#PostCheckoutRegisterForm_Login.form-control')[0].value;
+        //userBO["address_country"] = $('select#AddressForm_CountryCode.form-control')[0].value;
+        userBO["first_name"] = $('input#PostCheckoutRegisterForm_FirstName.form-control')[0].value;
+        userBO["last_name"] = $('input#PostCheckoutRegisterForm_LastName.form-control')[0].value;
+        userBO["name"] = userBO["first_name"] + " "+ userBO["last_name"];
+        //userBO["address_district"] = $('input#AddressForm_PostalCode.form-control')[0].value;
+        //userBO["address_city"] = $('input#AddressForm_City.form-control')[0].value;
+        //userBO["city"] = userBO["address_city"];
+        //userBO["phone"] = $('input#AddressForm_PhoneHome.form-control')[0].value;
+        userBO["account_created_at"] = new Date().toLocaleDateString();
+        return userBO;
+};
+*/
+
+let CATEGORIES_BUDGET_MAPPING = {
+    'Carti/Carte': 'Books',
+    'Carti/Carte straina': 'Foreign Books',
+    'Carti/Русская книга': 'Russian Books',
+    'Parfumuri': 'Perfumes',
+    'Ceasuri': 'Watches',
+    'Cosmetice': 'Cosmetics',
+    'Jucarii/Copii & Bebe/Jucarii': 'Toys',
+    'Jucarii/Copii & Bebe/Rechizite si papetarie': 'Toys',
+    'Jucarii/Copii & Bebe/Articole bebe si copii': 'Kids',
+    'Fashion/Bijuterii': 'Jewellery',
+    'Fashion/Ochelari': 'Eyeglasses',
+    'Fashion/Genti si accesorii': 'Bags&Accessories',
+    'Electro': 'IT&C',
+    'Nutritie': 'Nutrition',
+    'Nutritie & Suplimente': 'Nutrition',
+    'Home & Deco': 'Home&Deco',
+    'Supermarket': 'Supermarket',
+    'Vin & Gourmet': 'Vin & Gourmet',
+    'Sport si activitati in aer liber': 'Sport si activitati in aer liber'
+}
+
+
+function getBudgetedCategory(categories){
+    if (categories[0].startsWith('Promotii')) {
+     categories.shift();
+    }
+    var mainCategory = categories[0];
+    if (categories.length > 1){
+        var subCategory = '/' + categories[1];
+        if (categories[0].startsWith("Jucarii")){
+            mainCategory = categories[0] + '/' +  categories[1];
+            if (categories.length > 2) {
+                var subCategory = '/' +  categories[2]; 
+            }
+        }
+    }
+
+    var categoriesBudgeted = mainCategory + (subCategory ? subCategory : "");
+    var categoryBudgeted = CATEGORIES_BUDGET_MAPPING[categoriesBudgeted] ? CATEGORIES_BUDGET_MAPPING[categoriesBudgeted] : CATEGORIES_BUDGET_MAPPING[mainCategory];
+    
+    return categoryBudgeted;
+}
+
+let productViewed = (productBO) => {
+    //this function is reused in 2 formats -> one with ProductBO as input [for add-to-cart event]
+    //-> the other when user is on PDP [for ProductViewed event]
+    let onPDP = (productBO === undefined || productBO === null || productBO.toString().trim().length === 0);
+    let productInfo = onPDP ? $('.product-info')[0] : productBO[0];
+    if (productInfo !== undefined && productInfo !== null) {
+        let productBO = {};
+        productBO.quantity = "1";
+        productBO.brand = $(productInfo).find(".product-brand")[0].innerText.trim();
+        productBO.name = $(productInfo).find(".product-title")[0].innerText.trim();
+        productBO.sku = $(productInfo).find(".product-number")[0].innerText.replace(/.*?:/, '').trim();
+
+        let productInfoCurrentPrice = $(productInfo).find(".current-price");
+        if(productInfoCurrentPrice.length > 0) {
+            let price = fixPriceValue(productInfoCurrentPrice[0].innerText);
+            if(isNumber(price)) {
+                productBO.price = price;
+                let productInfoOldPrice = $(productInfo).find(".old-price");
+                if (productInfoOldPrice.length > 0) {
+                    productBO["initial_price"] = fixPriceValue(productInfoOldPrice[0].innerText);
+                    productBO.discount = parseFloat(parseFloat(productBO["initial_price"]) - parseFloat(productBO.price)).toFixed(2);
+                }
+            }
+        }
+        let variantOrSize = "";
+        if ($('.variation-attribute').length) {
+            let $object = $('.variation-attribute').find("option");
+
+            let productVariant = "";
+
+            $object.each( (id) => {
+                if ($object[id].selected) {
+                    variantOrSize = $object[id].value;
+                }
+
+            });
+        }
+        if (!onPDP) {
+            productBO.size = variantOrSize;
+            let productMainCategory = $(infinario.selectorEventISH.productCategory)[0];
+            if (productMainCategory) {
+                productBO["main_category"] = productMainCategory.defaultValue;
+            }
+            let categories = $('.breadcrumbs-list-link');
+            productBO.category = categories[categories.length-1].innerText;
+        } else {
+            productBO.variant = variantOrSize;
+            let productCategory = $('.elf-category-name')[0];
+            if (productCategory) {
+                productBO.category = productCategory.defaultValue;
+            }
+            var breadcrumbsList = document.querySelectorAll("*[class*='breadcrumbs-list']")[0];
+            if (breadcrumbsList) {
+                var categoriesList = breadcrumbsList.innerText.split('\n');
+                productBO.categories = [];
+                for(var i=0; i<categoriesList.length; i++){
+                    productBO.categories.push(categoriesList[i].trim());
+                }
+
+            }
+            productBO.stock = $(productInfo).find(".product-availability")[0].innerText.trim().toLowerCase();
+            productBO.image = $("#prodimgcarousel").find("img")[0].src;
+            productBO.currency = $(productInfo).find('.current-price:first').attr('data-price-currencymnemonic');
+            productBO["delivered_by"] = ($("input[name='supplier-name']").length && $("input[name='supplier-name']")[0].value) ? $("input[name='supplier-name']")[0].value : "";
+        }
+        return productBO;
+    }
+};
+
+let productSearched = () => {
+    let searchItem = {};
+    $(infinario.selectorEventISH.itemSearch).on('submit', function(e){
+         searchItem.query = $('.search.clearfix')[0].children[0].value;
+         if(searchItem.query != "") {
+             infinario.track('Products Searched', searchItem);
+         }
+    });
+};
+
+let productListViewed = () => {
+    if(infinario.eventsISH.productList) {
+        let exponeaBO = {};
+        exponeaBO.category =  $(infinario.selectorEventISH.productCategory).not('.search_term')[0] ? $(infinario.selectorEventISH.productCategory)[0].defaultValue : "";
+        if ((exponeaBO.category != "") || ($(infinario.selectorEventISH.productCategory).hasClass('search_term'))) {
+            let $productList = $(infinario.selectorEventISH.productList);
+            let tempArray = [];
+            if ($productList.length > 0) {
+                $productList.map( function () {
+                    return $(this).attr('sku');
+                }).each((index, value) => {
+                    tempArray.push({
+                        key : 'product_id',
+                        value: value
+                    });
+                });
+               exponeaBO.products = dataMapper(tempArray);
+               infinario.track('Product List Viewed', exponeaBO);
+            }
+        }
+    }
+};
+
+let productListFiltered = () => {
+    if(infinario.eventsISH.productListFilter) {
+        let exponeaBO = {};
+        exponeaBO.category =  $(infinario.selectorEventISH.productCategory).not('.search_term')[0] ? $(infinario.selectorEventISH.productCategory)[0].defaultValue : "";
+
+        let selectedFilters = $(infinario.selectorEventISH.productListFilters);
+        let filtersList = [];
+        selectedFilters.each(function() {
+            let $this = $(this);
+            let type = $this.find('.ws-filter-name').text().replace(':','');
+            let filterValueList = $this.find('.ws-filter-value').map(function() {
+                return $(this).text();
+            }).get().join(" | ");
+            filtersList.push({'type': type, 'value': filterValueList});
+        });
+        exponeaBO.filters = filtersList;
+        let tempArray = [];
+        let $productList = $(infinario.selectorEventISH.productList);
+        if ($productList.length > 0) {
+            $productList.map( function () {
+                return $(this).attr('sku');
+            }).each((index, value) => {
+                tempArray.push({
+                    key : 'product_id',
+                    value: value
+                });
+            });
+            exponeaBO.products = dataMapper(tempArray);
+            infinario.track('Product List Filtered', exponeaBO);
+        }
+    }
+};
+
+let addToCart = ()  => {
+    $(document).on("click", infinario.selectorEventISH.addToCart, function () {
+        let object = $(this)[0].offsetParent.getElementsByClassName('product-info');
+        infinario.track('Cart Product Added', productViewed(object));
+    })
+};
+
+let addToCartFromWishList = function () {
+    $(document).on('click', infinario.selectorEventISH.addToCartFromWishList, function(e) {
+        let object = $($(this)[0].offsetParent)[0];
+        let exponeaBO = {};
+        exponeaBO.quantity = "1";
+        exponeaBO.sku = object.getElementsByClassName("product-sku")[0].innerText;
+        let categories = object.getElementsByClassName("product-category")[0].innerText;
+        if (categories) {
+            categories = categories.split(", ");
+            categories = categories.filter(Boolean);
+            if (categories.length == 1) {
+                exponeaBO["main_category"] = categories[0];
+                exponeaBO["category"] = categories[0];
+            } else {
+                exponeaBO["main_category"] = categories[0];
+                exponeaBO["category"] = categories[categories.length -1];
+            }
+        }
+        exponeaBO.name = object.getElementsByClassName("product-title")[0].innerText;
+        exponeaBO.price = fixPriceValue(object.getElementsByClassName('current-price')[0].innerText);
+        let variants = $(object).find('option');
+        variants.each( (index, value) =>  {
+            if (value.selected) {
+                exponeaBO.size = value.innerText;
+            }
+        });
+        infinario.track('Cart Product Added from Wishlist', exponeaBO);
+    });
+};
+
+let removeFromCart = () => {
+    $(infinario.selectorEventISH.removeFromCart).on('click', function (e) {
+        let exponeaBO = {};
+        let itemContainer = $(this)[0].offsetParent.getElementsByClassName('descr-container');
+        let temp = itemContainer[0].getElementsByClassName('pli-description')[0];
+        exponeaBO.sku = $(temp.getElementsByClassName('product-desc')).attr('sku');
+        exponeaBO.brand = temp.getElementsByClassName('product-title')[0].textContent.trim();
+        exponeaBO.name = temp.getElementsByClassName('product-desc')[0].textContent.trim();
+        let price = fixPriceValue(temp.getElementsByClassName('total-price')[0].innerText);
+        if(isNumber(price)) {
+            exponeaBO.price = price;
+        }
+        exponeaBO.quantity = itemContainer[0].getElementsByClassName('quantity')[0].getElementsByClassName("js-quantity")[0].value;
+        if(temp.getElementsByClassName('variationAttribute-last').length > 0) {
+            exponeaBO.size = temp.getElementsByClassName('variationAttribute-last')[0].textContent;
+        }
+        let categories = temp.getElementsByClassName('product-category')[0].innerText;
+        if (categories) {
+            categories = categories.split(", ");
+            categories = categories.filter(Boolean);
+            if (categories.length == 1) {
+                exponeaBO["main_category"] = categories[0];
+                exponeaBO["category"] = categories[0];
+            } else {
+                exponeaBO["main_category"] = categories[0];
+                exponeaBO["category"] = categories[categories.length -1];
+            }
+        }
+        infinario.track('Cart Product Removed', exponeaBO);
+    });
+
+    $(document).on('click', infinario.selectorEventISH.removeFromMiniCart, function () {
+        let exponeaBO = {};
+        let object = $(this)[0].parentElement.parentElement;
+        exponeaBO.sku = object.getElementsByClassName("product-sku")[0].innerText.trim();
+        exponeaBO.brand = object.getElementsByClassName("product-brand")[0].innerText.trim();
+        exponeaBO.name = object.getElementsByClassName("quick-cart-product-link")[0].title.trim();
+        let price = fixPriceValue(object.getElementsByClassName("product-price")[0].innerText);
+        if(isNumber(price)) {
+            exponeaBO.price = price;
+        }
+        exponeaBO.quantity = object.getElementsByClassName("cart-pli-data")[0].innerText.replace(/.*?:/, '').trim();
+        let categories = object.getElementsByClassName("product-category")[0].innerText;
+        if (categories) {
+            categories = categories.split(", ");
+            categories = categories.filter(Boolean);
+            if (categories.length == 1) {
+                exponeaBO["main_category"] = categories[0].trim();
+                exponeaBO["category"] = categories[0].trim();
+            } else {
+                exponeaBO["main_category"] = categories[0].trim();
+                exponeaBO["category"] = categories[categories.length -1].trim();
+            }
+        }
+        infinario.track('Cart Product Removed', exponeaBO);
+    })
+};
+
+let cartViewed = function () {
+    if(infinario.eventsISH.cartView) {
+        let cartBO = {}, cartItems = [];
+        let tempArray = [];
+
+        let listBodyElement = document.getElementsByClassName("list-body");
+        if(listBodyElement && listBodyElement.length > 0) {
+            let $itemsInCart = $(listBodyElement[0].children);
+            $itemsInCart.each(function(index) {
+                tempArray.push({
+                    key : 'product_id',
+                    value: $(this).find('a.product-desc').attr('sku')
+                });
+            });
+        }
+
+        let cartSubtotalElement = document.querySelector(".cost-summary .sub-total");
+        if(cartSubtotalElement)
+            cartBO.total = fixPriceValue(cartSubtotalElement.innerText);
+ 
+        //cartBO.delivery = $('#shipping-cost').length == 1 ? fixPriceValue($('#shipping-cost')[0].innerText) : "";
+        cartBO.products = dataMapper(tempArray);
+        infinario.track('Cart Viewed', cartBO);
+    }
+};
+
+let miniCartViewed = function() {
+    let observerConfig = { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-expanded'] };
+    observeMutation('.user-links *[data-ajax-content*=ViewMiniCart-Status]', observerConfig, observerCallbackMiniCart);
+};
+
+//https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver
+let observeMutation = function(selector, observerConfig, observerCallback) {
+    let nodes = document.querySelectorAll(selector);
+    for(let index = 0; index < nodes.length; index++)
+        observeNodeMutation(nodes[index], observerConfig, observerCallback);
+}
+
+//https://developer.mozilla.org/en-US/docs/Web/API/MutationObserverInit
+let observeNodeMutation = function(node, observerConfig, observerCallback) {
+    let observer = new MutationObserver(observerCallback);
+    observer.observe(node, observerConfig);
+}
+
+let observerCallbackMiniCart = function(mutationsList, observer) {
+    let miniCartExpanded = document.querySelector('.mini-cart[aria-expanded=true]');
+    if(miniCartExpanded) {
+        let miniCartItems = document.querySelectorAll('.mini-cart .product-row .product-sku');
+        let miniCartItemsSku = Array.from(miniCartItems, function(item) { return { key: 'product_id', value: item.innerText.trim() } });
+        //console.log(miniCartItemsSku);
+
+        let minicartBO = {}
+        let minicartSubtotalElement = document.querySelector('.mini-cart .subtotal-price');
+        if (minicartSubtotalElement)
+            minicartBO.total = fixPriceValue(minicartSubtotalElement.innerText);
+        minicartBO.products = dataMapper(miniCartItemsSku);
+        infinario.track('Cart Viewed', minicartBO);
+    }
+}
+
+let orderSubmitted = function () {
+    if (infinario.eventsISH.orderSubmit) {
+        if(!isNavigation())
+            return;
+
+        let form = document.querySelector(infinario.selectorEventISH.orderCompleted);
+        form.addEventListener('submit', function (e) {
+            let exponeaBO = {};
+            exponeaBO["checkout_id"] =  document.querySelector('input[name="CheckoutID"]').value;
+            exponeaBO.currency = $('#form-submit-order').attr('currency');
+
+            /*if($('#form-submit-order').attr('shipping-method') == "Pickup-Point") {
+                exponeaBO["delivery_mode"] = "Ridicare Personala";
+                exponeaBO["pick_up_point"] = $('#form-submit-order').attr('shipping-address');
+            } else {
+                exponeaBO["delivery_mode"] = "Curier rapid";
+                exponeaBO["address"] = $('#form-submit-order').attr('shipping-address');
+            }*/
+            exponeaBO["delivery_mode"] = $('#form-submit-order').attr('shipping-method');
+            exponeaBO["address"] = $('#form-submit-order').attr('shipping-address');
+
+            exponeaBO["city"] = $('#form-submit-order').attr('city');
+            exponeaBO["tax"] = fixPriceValue($('.sub-total').attr('tax'));
+            exponeaBO["total"] = fixPriceValue($('.total-price.cart-summary')[0].innerText);
+
+            if ($('.payment-default.selected').length) {
+                exponeaBO["payment_mode"] = "Cash on Delivery";
+            } else if ($('.payment-payos.selected').length) {
+                exponeaBO["payment_mode"] = "Online cu card bancar";
+            }
+            if(exponeaBO["checkout_id"] != null && exponeaBO["checkout_id"] != "") {
+                if ($('input[name="termsAndConditions"]').is(":checked")) {
+                    setCommonEventProperties(exponeaBO);
+                    infinario.track('Order Submitted', exponeaBO);
+                    checkoutSubscribe();
+                }
+            }
+        }, false);
+    }
+};
+
+let orderCompleted = function () {
+    if (!infinario.eventsISH.purchase)
+        return;
+
+    if(!isNavigation()){
+        return;
+    }
+    let elements = document.querySelectorAll("*[data-exponea-purchase] li");
+    let productsList = [];
+    
+    for (var i = 0; i < elements.length; i++) {
+      let productElement = elements[i];
+      let product = productElement.getAttribute('product-sku');
+      
+      productsList.push(product);
+    }
+
+    let exponeaBO = {};
+    exponeaBO["checkout_id"] = $('#checkout-receipt').attr('checkout-id');
+    exponeaBO["order_id"] =  $('.purchase.product-list').attr('order-number');
+    exponeaBO["total"] = fixPriceValue($('dd.total-price.cart-summary').text());
+    exponeaBO["subtotal"] = fixPriceValue($('dd.sub-total').text());
+    exponeaBO["tax"] = fixPriceValue($('dd.sub-total').attr('tax'));
+    exponeaBO["shipping_fee"] = fixPriceValue($('dd#shipping-cost').text());
+    exponeaBO["handling_fee"] = fixPriceValue($("#checkout-receipt #shipping-cost + dt + dd").text());
+    exponeaBO["products"] = productsList;
+
+    let dataLayerElements = dataLayer.filter(e => e.ecommerce);
+    if(dataLayerElements && dataLayerElements.length > 0) {
+        let dataLayerEcommerce = dataLayerElements[0].ecommerce;
+
+        var orderCoupon = dataLayerEcommerce.purchase.actionField.coupon;
+        if (orderCoupon)
+            exponeaBO["coupon"] = orderCoupon.toUpperCase();
+    }
+
+    let productListElements = $('.purchase.product-list > li');
+    if(productListElements && productListElements.length > 0) {
+        let productElement = productListElements[0];
+
+        /*if (productElement.getAttribute('product-delivery-mode') == 'Pickup-Point')
+            exponeaBO["delivery_mode"] = "Ridicare Personala";
+        else
+            exponeaBO["delivery_mode"] = "Curier rapid";
+        */
+       exponeaBO["delivery_mode"] = productElement.getAttribute('product-delivery-mode');
+
+        if(productElement.getAttribute('product-payment-mode') == 'ISH_CASH_ON_DELIVERY')
+            exponeaBO["payment_mode"] = "Cash on Delivery";
+        else
+            exponeaBO["payment_mode"] = "Online cu card bancar";
+    }
+
+    setCommonEventProperties(exponeaBO);
+    infinario.track('Order Completed', exponeaBO);
+};
+
+let checkoutSubscribe = function () {
+    if(infinario.eventsISH.orderSubmit) {
+        let userBO = {};
+        let userEmail = window.RESTConfiguration.Login ? window.RESTConfiguration.Login : $('input#subscribe-to-newsletter').attr('data-newsletter-email');
+
+        userBO.registered = userEmail;
+        infinario.identify(userBO.registered);
+
+        userBO.email = userEmail;
+        infinario.update({email:userBO.email});
+
+        if($('#subscribe-to-newsletter').is(":checked")) {
+            let newsletter = {};
+            newsletter.category = "newsletter-general";
+            newsletter.valid_until = "unlimited";
+            newsletter.action = 'accept';
+
+            let sms = {};
+            sms.category = "sms-general";
+            sms.valid_until = "unlimited";
+            sms.action = 'accept';
+
+            let elfPrem = {};
+            elfPrem.category = "elefant-premium";
+            elfPrem.valid_until = "unlimited";
+            elfPrem.action = 'accept';
+
+            let emailPers = {};
+            emailPers.category = "email-personalizat";
+            emailPers.valid_until = "unlimited";
+            emailPers.action = 'accept';
+
+            let smsPers = {};
+            smsPers.category = "sms-personalizat";
+            smsPers.valid_until = "unlimited";
+            smsPers.action = 'accept';
+
+            infinario.track('consent', newsletter)
+            infinario.track('consent', sms);
+            infinario.track('consent', elfPrem);
+            infinario.track('consent', emailPers);
+            infinario.track('consent', smsPers);
+        }
+    }
+}
+
+let productPurchased = function () {
+    if (infinario.eventsISH.purchase) {
+        if(!isNavigation())
+            return;
+
+        return new Promise ( (resolve, reject) => {
+            setTimeout(() => {
+                resolve ($('.ETA'));
+            },2000)
+        }).then ( (object) => {
+            let exponeaBO = {};
+                $('*[data-exponea-purchase] li').each(function(index) {
+                    let $productLineItem = $($(this)[0]);
+                    exponeaBO["tax"] = fixPriceValue($productLineItem.attr("product-tax"));
+                    exponeaBO.sku = $productLineItem.attr("product-sku");
+                    exponeaBO.quantity = $productLineItem.attr("product-quantity");
+                    let isOnDiscount = $productLineItem.attr("product-discount-price") != "" ? true : false;
+                    if(isOnDiscount) {
+                        exponeaBO.price = fixPriceValue($productLineItem.attr("product-discount-price"));
+                    } else {
+                        exponeaBO.price = fixPriceValue($productLineItem.attr("product-price"));
+                    }
+                    if ($productLineItem.attr("product-payment-mode").includes("ISH_CASH_ON_DELIVERY")) {
+                        exponeaBO["payment_mode"] = "Cash on Delivery";
+                    } else {
+                        exponeaBO["payment_mode"] = "Online cu card banca";
+                    }
+                    exponeaBO["order_id"] = $('.purchase.product-list').attr('order-number'); 
+                    exponeaBO["checkout_id"] = $('#checkout-receipt').attr('checkout-id'); 
+                    exponeaBO["name"] = $productLineItem.attr("product-name");
+
+                    let categories = $productLineItem.attr("product-categories") ? $productLineItem.attr("product-categories").split(",").map(function(item) { 
+                        return item.trim();
+                    }) : "";
+                    if(categories) {
+                        exponeaBO["categories"] = categories;
+                        if (categories.length == 1) {
+                            exponeaBO["main_category"] = categories[0];
+                            exponeaBO["category"] = categories[0];
+                        } else {
+                            exponeaBO["main_category"] = categories[0];
+                            exponeaBO["category"] = categories[categories.length -1];
+                        }
+                        exponeaBO["budgeted_category"] = getBudgetedCategory(categories);
+                    }
+                    exponeaBO.etd = object[index].innerText.trim();
+                    /*if ($productLineItem.attr("product-delivery-mode") == "Pickup-Point") {
+                        exponeaBO["delivery_mode"] = "Ridicare Personala";
+                    } else {
+                        exponeaBO["delivery_mode"] = "Curier rapid";
+                    }*/
+                    exponeaBO["delivery_mode"] = $productLineItem.attr("product-delivery-mode");
+                    exponeaBO["brand"] = $productLineItem.attr("product-brand");
+                    infinario.track('Product Purchased', exponeaBO);
+                    exponeaBO = {};
+                });
+        });
+    }
+};
+
+let productReview = function () {
+        $(infinario.selectorEventISH.productReview).on("click", () => {
+            return new Promise ( (resolve, reject) => {
+             setTimeout(() => {
+                 resolve ($('.add-to-cart-wrapper > .product-rating.clearfix > .rating-display'))
+             }, 2000);
+            }).then( (object) => {
+                let ratingMap = new Map();
+                ratingMap.set('one', 1);ratingMap.set('two', 2);ratingMap.set('three', 3);ratingMap.set('four', 4);ratingMap.set('five', 5);
+                let exponeaBO = {};
+                exponeaBO.rating = ratingMap.get(object[0].className.replace(/.*?-/, '').replace(/.*?-/, ''));
+                exponeaBO.sku = $('.add-to-cart-wrapper > .product-info > .product-number')[0].innerText.replace(/.*?:/, '').trim();
+                infinario.track('Product Reviewed', exponeaBO);
+            });
+        });
+};
+
+let setConsentFromMyAccount = () => {
+    let newsletter = {};
+        newsletter.category = "newsletter-general";
+        newsletter.valid_until = "unlimited";
+    let sms = {};
+        sms.category = "sms-general";
+        sms.valid_until = "unlimited";
+    let elfPrem = {};
+        elfPrem.category = "elefant-premium";
+        elfPrem.valid_until = "unlimited";
+    let emailPers = {};
+        emailPers.category = "email-personalizat";
+        emailPers.valid_until = "unlimited";
+    let smsPers = {};
+        smsPers.category = "sms-personalizat";
+        smsPers.valid_until = "unlimited";
+
+    if($('#AccountCommunicationPreferences').length == 1) {
+        $('#submitCommunicationSettings').on('click',function(e){
+            let newsLetterFlag = convertFlag($('#AccountCommunicationPreferences_NewsletterFlag').is(":checked"));
+            let smsFlag = convertFlag($('#AccountCommunicationPreferences_SmsFlag').is(":checked"));
+            let elefantPremiumFlag = convertFlag($('#AccountCommunicationPreferences_ElefantPremiumFlag').is(":checked"));
+            let emailPersonalizatFlag = convertFlag($('#AccountCommunicationPreferences_EmailPersonalizatFlag').is(":checked"));
+            let smsPersonalizatFlag = convertFlag($('#AccountCommunicationPreferences_SmsPersonalizatFlag').is(":checked"));
+
+            newsletter.action = newsLetterFlag;
+            sms.action = smsFlag;
+            elfPrem.action = elefantPremiumFlag;
+            emailPers.action = emailPersonalizatFlag;
+            smsPers.action = smsPersonalizatFlag;
+
+            infinario.track('consent', newsletter);
+            infinario.track('consent', sms);
+            infinario.track('consent', elfPrem);
+            infinario.track('consent', emailPers);
+            infinario.track('consent', smsPers);
+            return true;
+        });
+    }
+
+    function convertFlag(flag)
+    {
+        var result = 'accept';
+        if(flag == true)
+        {
+            result = 'accept';
+        }
+        else
+        {
+            result = 'reject';
+        }
+        return result;
+    }
+}
+
+let setConsentFromCredentialForm = ()  => {
+    let newsletter = {};
+    newsletter.category = "newsletter-general";
+    newsletter.valid_until = "unlimited";
+
+    let sms = {};
+    sms.category = "sms-general";
+    sms.valid_until = "unlimited";
+
+    let elfPrem = {};
+    elfPrem.category = "elefant-premium";
+    elfPrem.valid_until = "unlimited";
+
+    let emailPers = {};
+    emailPers.category = "email-personalizat";
+    emailPers.valid_until = "unlimited";
+
+    let smsPers = {};
+    smsPers.category = "sms-personalizat";
+    smsPers.valid_until = "unlimited";
+
+    if($('form[name="CredentialForm"]').length == 1) {
+        $('form[name="CredentialForm"] button[type="submit"][name="register"]').on('click', function(e) {
+            newsletter.action = $('#AccountCommunicationPreferences_NewsletterFlag').is(":checked") ? 'accept' : 'reject';
+            sms.action        = $('#AccountCommunicationPreferences_SmsFlag').is(":checked") ? 'accept' : 'reject';
+            elfPrem.action    = $('#AccountCommunicationPreferences_ElefantPremiumFlag').is(":checked") ? 'accept' : 'reject';
+            emailPers.action  = $('#AccountCommunicationPreferences_EmailPersonalizatFlag').is(":checked") ? 'accept' : 'reject';
+            smsPers.action    = $('#AccountCommunicationPreferences_SmsPersonalizatFlag').is(":checked") ? 'accept' : 'reject';
+
+            infinario.track('consent', newsletter);
+            infinario.track('consent', sms);
+            infinario.track('consent', elfPrem);
+            infinario.track('consent', emailPers);
+            infinario.track('consent', smsPers);
+
+            return true;
+        });
+    }
+
+};
+
+let updateCustomerAttributes = ()  => {
+    if(typeof exponeaCustomerAttributes !== 'undefined')
+    {
+        infinario.update(exponeaCustomerAttributes);
+    }
+};
+
+let setCommonEventProperties = (exponeaBO) => {
+    try {
+        exponeaBO["ga_active"] = (window.GoogleAnalyticsObject != null);
+    } catch(error) {
+        console.error(error);
+    }
+};
+
+let deleteAccount = () => {
+    $(document).on("click", infinario.selectorEventISH.deleteAccountForm, function () {
+        let exponeaBO = {};
+        infinario.track('Delete Account', exponeaBO);
+    })
+};
+}
