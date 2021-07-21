@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet"  href="style.css">
+    <title>Document</title>
+</head>
+<body>
+    
+
+<div class="main">
+  <h1 id="title"> Form Survey Andreea</h1>
+  <p id="description">
+    Thank your for completing this survey. </p>
+  
+  <div class="main-content">
+    <div class="form-content">
+      <form id="survery-form">
+  
+        <label for="name" id="name-label"> Name </label><br>
+        <input id="name" type="text"  required placeholder="Enter your name" /> <br>
+        <label for="email" id="email-label" >Email </label><br>
+        <input id="email" type="email" required placeholder="Enter your email"/><br>
+        <label for="number" id="number-label">How happy are you? Rate from 1 to 10 </label><br>
+        <input id="number" type="number" min="1" max="10" required placeholder="Enter your rate"/>
+        <br> <br>
+        <label for="dropdown"> What is your favourite activity ? </label> <br>
+        <select id="dropdown">
+          <option value="reading">Reading a good book</opional>
+          <option value="skydive">Skydive</option>
+          <option value="party">Party</opional>
+          <option value="running">Running</option>
+          <option value="other">Other</option>
+      </select>
+        
+    <fieldset> 
+      <legend> Would you like to travel more? </legend>
+      <input type="radio" name="action" checked id="Definetely" value="definetely" /> <label for="definitely"> Definitely </label><br/>
+       <input type="radio" name="action" checked id="maybe" value="meybe" /> <label for="maybe"> Maybe </label><br/>
+       <input type="radio" name="action" checked id="Not sure" value="not-sure" /> <label for="not-sure"> Not sure </label><br/>
+     
+    </fieldset>
+        
+    <p> What would you like to do in order to have a better life? </p>
+    <input type="checkbox" id="meditation" name="meditation" value="meditation">
+    <label for="meditation">Meditation</label><br>
+         <input type="checkbox" id="gym" name="gym" value="gym">
+    <label for="gym">Gym</label><br>
+         <input type="checkbox" id="eat" name="eat" value="eat">
+        <label for="eat">Healthy food</label><br>
+    
+    <label for="comment">Would you like to make yourself a promise? </label>
+    <textarea rows="5" cols="50" id="comment">Enter your thoughts here...</textarea>
+    <button type="submit" id="submit">Submit</button>
+         
+      </form>
+    </div>
+  </div>
+ 
+</div>
+</body>
+</html>

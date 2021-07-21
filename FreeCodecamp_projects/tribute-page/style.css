@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poiret+One&display=swap');
+#main{
+    max-width: 1280px;
+    max-hight: 100%;
+    margin: 30px auto;
+    padding: 15px;
+    background-color: light-gray;
+    border-radius: 5px;
+  }
+  #title{
+    text-align: center;
+    font-family: 'Great Vibes', cursive;
+    font-size: 60px;
+    
+  }
+    #main > h3 {
+      text-align: center;
+      font-family: 'Poiret One', cursive;
+    }
+    #img-div{
+     
+      background-size: cover;
+      margin: 0 auto;
+      
+  }
+  #image{
+    display: block;
+    max-width: 100%;
+    padding-bottom: 10px;
+  }
+  
+  #tribute-info{
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  #tribute-info > h3 {
+    text-align: center;
+    font-family: 'Great Vibes', cursive;
+    font-size: 60px;
+  }
+  #tribute-info > ul li {
+    margin-bottom: 10px;
+    line-height: 30px;
+    font-family:'Times New Roman', Times, serif;
+    font-size: 30px;
+  }
+  
+  h4{
+    text-align: center;
+  }
+  
+  
+  
