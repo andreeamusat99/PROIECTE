@@ -1,0 +1,272 @@
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lato&family=Montserrat:wght@200&display=swap" rel="stylesheet">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wild Bee Honey</title>
+<link rel="stylesheet" href="add-tp-cart.css">
+<link rel="stylesheet" href="style.css">
+
+
+<body>
+<style>
+p{
+font-family: 'Montserrat', sans-serif;
+font-size: 12px;
+text-align: center;
+}
+body{
+	padding-left: 120px;
+	background-image: url('gallery2.jpg');
+}
+</style>
+<header>
+<h1> Mierea albinelor noastre <H1>
+
+<div class="slideshow-container">
+
+<div class="mySlides fade">
+   <img src="poza3.jpg" style="width:100%">
+  
+</div>
+<div class="mySlides fade">
+ 
+  <img src="poza1.jpg" style="width:100%">
+  
+</div>
+<div class="mySlides fade">
+
+  <img src="poza1.jpg" style="width:100%">
+  
+</div>
+
+<div class="mySlides fade">
+
+  <img src="poza3.jpg" style="width:100%">
+
+</div>
+
+</div>
+
+<div style="text-align:center">
+  <span class="dot" onclick="currentSlide(1)"></span> 
+  <span class="dot" onclick="currentSlide(2)"></span> 
+  <span class="dot" onclick="currentSlide(3)"></span> 
+   <span class="dot" onclick="currentSlide(4)"></span> 
+</div>
+
+
+
+<h4> UN SUBTITLU
+</h4>
+
+<script>
+var slideIndex = 1;
+showSlides(slideIndex);
+
+function plusSlides(n) {
+  showSlides(slideIndex += n);
+}
+
+function currentSlide(n) {
+  showSlides(slideIndex = n);
+}
+
+function showSlides(n) {
+  var i;
+  var slides = document.getElementsByClassName("mySlides");
+  var dots = document.getElementsByClassName("dot");
+  if (n > slides.length) {slideIndex = 1}    
+  if (n < 1) {slideIndex = slides.length}
+  for (i = 0; i < slides.length; i++) {
+      slides[i].style.display = "none";  
+  }
+  for (i = 0; i < dots.length; i++) {
+      dots[i].className = dots[i].className.replace(" active", "");
+  }
+  slides[slideIndex-1].style.display = "block";  
+  dots[slideIndex-1].className += " active";
+}
+</script>
+
+
+</header>
+
+	<div class="card">
+  <img src="images/borcan-miere.jpg" alt="miere de salcam" style="width:50%">
+  <h1>Miere de Mai</h1>
+  <p class="price">25 RON</p>
+      <p> <b>Mierea de mai este obtinuta in general din culesul albinelor de la pomi fructiferi, lucerna, rapita, salcam si alte flori de primavara.<br>
+Mierea de mai are o culoare galben-rosiatic deschis iar in forma cristalizata este un galben pal spre alb. Este dulce, are gust si aroma fina. <br>
+Noi va oferim mierea vie, cruda, neprocesata, nefiltrata. Cristalizeaza relativ repede dar omogen si cu cristale relativ fine.</b></p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+<div class="card">
+  <img src="images/borcan-miere.jpg"alt="miere de cimbru" style="width:50%">
+  <h1>Miere de cimbru</h1>
+   <p class="price">35.99 RON</p>
+  <p> <b> Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa. </b>
+<br> Fiind miere naturala, are tendinta de a se solidifica la temperaturi scazute, deci este recomandata incalzirea sa la cuptorul cu microunde sau in apa fierbinte inainte de a fi consumata.  </p>
+ 
+  
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+
+	<div class="card">
+  <img src="images/borcan-miere.jpg" alt="miere de salcam" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+  <p><b>
+Mierea de salcâm este ”aur” pentru bolile cardiovasculare
+calmează tusea și sistemul nervos
+tratează astenia și nevrozele, gastrita hiperacidă, cancerul, ulcerul, ateroscleroza, reumatismul și tulburările de circulație
+este un excelent tonic pentru copii și pacienți în convalescență și gravide
+întărește sistemul imunitar </b></p>
+
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="miere de cimbru" style="width:50%">
+  <h1>Miere de manuka</h1>
+  <p class="price">35.99 RON</p>
+   <p><b>Mierea de Manuka este o miere monoflorala din nectar de floare de Manuka, un arbore care creste numai in zone perfect ecologice nelocuite din Noua Zeelanda si care contine MGO (Methylglyoxal), 
+   un compus natural puternic antibacterian gasit de albine in concentratie nectarului din floare de Manuka. </b></p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+<div class="card">
+  <img src="images/borcan-miere.jpg"alt="miere poliflora" style="width:50%">
+  <h1>Miere de tei</h1>
+     <p class="price">35.99 RON</p>
+  <p><b> Mierea de tei are o aroma placuta, amintind de florile de tei. I se atribuie proprietatile medicinale ale plantei de origine. 
+  Mierea de tei este trecuta in categoria celor mai bune si celor mai apreciate sortimente de miere, bogata in vitamine (mai ales vitamina B1) si aminoacizi.<b></p>
+  <p><button>Add to Cart</button></p>
+</div>
+
+<div class="card">
+  <img src="images/borcan-miere.jpg"alt="miere de cimbru" style="width:50%">
+  <h1>Miere de flori de camp</h1>
+  <p class="price">35.99 RON</p>
+  <p><b> Este o buna sursa de vitamine, enzime, minerale si acizi organici, facand acest produs sanatos de nelipsit din orice casa. 
+  Mai mult decat atat, este recomandat ca substitut natural al zaharului. 
+  Aceasta miere prezinta o culoare rosiatica si un gust subtil si dulceag, dar cu tente amarui. <b></p>
+  
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="miere poliflora" style="width:50%">
+  <h1>Miere de papadie</h1>
+  <p class="price">29.99 RO</p>
+  <p><b> Mierea de păpădie crește depozitul glicogenului din ficat, care se transformă în energie ori de câte ori celulele noastre au nevoie.
+Glucoza mierii naturale de păpădie este un nutrient de primă clasă al celulelor hepatice. </b>
+   <br>
+<br>   Fiind miere naturala, are tendinta de a se solidifica la temperaturi scazute, deci este recomandata incalzirea sa la cuptorul cu microunde sau in apa fierbinte inainte de a fi consumata.  </p>
+  <p><button>Add to Cart</button></p>
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg"alt="miere poliflora" style="width:50%">
+  <h1>Miere de mana</h1>
+  <p class="price">28.99 RO</p>
+    <p><b>Mierea de mana are o valoare deosebita pentru consumul uman. Ea contine acizi organici, bioflavonoide, vitamina C si vitaminele grupului B, 
+	multa inhibina (bactericid) si enzime.Mierea pură de mană are foarte putin polen, acesta provenind în special de la plantele anemofile.<br>
+Mierea de mană conţine substanţe antioxidante precum fenoli, flavonoizi sau alţi pigmenţi. De asemenea, a fost evidenţiat conţinutul mare de componente bioactive comparativ cu celelalte tipuri de miere.	</b></p>
+  <p><button>Add to Cart</button></p>
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg"alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+
+</div>
+<div class="card">
+  <img src="images/borcan-miere.jpg" alt="propolis" style="width:50%">
+  <h1>Miere de salcam</h1>
+  <p class="price">25 RON</p>
+    <p>Mierea de cimbru La Chinata este un complex natural produs de albine din flori de cimbru si beneficiaza de proprietati nutritionale si terapeutice. 
+  <br> <br>Acest tip de miere are o culoare rosiatica si o aroma parfumata si placuta, cu o consistenta densa.</p>
+  <p><button>Add to Cart</button></p>
+
+</div>
+

@@ -1,0 +1,84 @@
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600&display=swap" rel="stylesheet">
+body {margin:0;}
+
+h1{
+font-family: 'Dancing Script', sans-serif;
+font-size: 38px;
+text-align: center;
+}
+
+.navbar {
+  overflow: hidden;
+  background-color: #e6ac89;
+  position: fixed;
+  top: 0;
+  width: 100%;
+}
+p{
+font-family: 'Montserrat', sans-serif;
+font-size: 27px;
+ font-weight: bold;
+
+}
+p1{
+font-family: 'Lexend', bold;
+font-size: 18px;
+ font-weight: bold;
+}
+h1{
+font-family: 'Lexend', sans-serif;
+font-size: 38px;
+text-align: left;
+}
+h2{
+font-family: 'Dancing Script', sans-serif;
+font-size: 28px;
+ border-bottom: 1px solid #d78a30;
+
+
+font-weight: bold;
+}
+.navbar a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.navbar a:hover {
+  background: #ddd;
+  color: black;
+}
+
+.main {
+  padding: 56px;
+  margin-top: 30px;
+  background-color: #fff5eb;
+  height: 1500px; /* Used in this example to enable scrolling */
+}
+* {
+  box-sizing: border-box;
+}
+
+.column {
+  float: left;
+  width: 33.33%;
+  padding: 5px;
+}
+.column p{
+font-size: 28px;
+text-align: center;
+padding: 12px;
+}
+
+/* Clearfix (clear floats) */
+.row::after {
+  content: "";
+  clear: both;
+  display: inline-block;
+}
